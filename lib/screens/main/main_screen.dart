@@ -1,0 +1,553 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../config/theme.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/environment_provider.dart';
+import '../terminal/terminal_screen.dart';
+import '../webview/webview_screen.dart';
+import '../settings/settings_screen.dart';
+import '../../widgets/brutalist_button.dart';
+import '../../widgets/environment_selector.dart';
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _currentIndex = 0;
+
+  final List<TabItem> _tabs = [
+    TabItem(
+      icon: Icons.terminal,
+      label: 'Terminal',
+      activeColor: AppTheme.neonGreen,
+    ),
+    TabItem(
+      icon: Icons.web,
+      label: 'Browser',
+      activeColor: AppTheme.neonBlue,
+    ),
+    TabItem(
+      icon: Icons.settings,
+      label: 'Settings',
+      activeColor: AppTheme.neonPink,
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _currentIndex = _tabController.index;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer2<AuthProvider, EnvironmentProvider>(
+      builder: (context, authProvider, environmentProvider, child) {
+        return Scaffold(
+          backgroundColor: AppTheme.darkBackground,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Top Bar
+                _buildTopBar(authProvider, environmentProvider),
+                
+                // Environment Selector
+                if (environmentProvider.environments.isNotEmpty)
+                  _buildEnvironmentSelector(environmentProvider),
+                
+                // Tab Content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      const TerminalScreen(),
+                      const WebViewScreen(),
+                      const SettingsScreen(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Custom Bottom Navigation
+          bottomNavigationBar: _buildBottomNavigation(),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopBar(AuthProvider authProvider, EnvironmentProvider environmentProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: AppTheme.darkSurface,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.darkBorder, width: 2),
+        ),
+      ),
+      child: Row(
+        children: [
+          // App Title
+          Text(
+            'DevPocket',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: _tabs[_currentIndex].activeColor,
+              fontWeight: FontWeight.black,
+            ),
+          ).animate().shimmer(duration: 2.seconds, color: _tabs[_currentIndex].activeColor.withOpacity(0.3)),
+          
+          const Spacer(),
+          
+          // Connection Status
+          _buildConnectionStatus(environmentProvider),
+          
+          const SizedBox(width: 12),
+          
+          // Refresh Button
+          IconButton(
+            onPressed: environmentProvider.isLoading 
+                ? null 
+                : () => environmentProvider.fetchEnvironments(),
+            icon: Icon(
+              Icons.refresh,
+              color: environmentProvider.isLoading 
+                  ? AppTheme.mutedText 
+                  : AppTheme.secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConnectionStatus(EnvironmentProvider environmentProvider) {
+    final currentEnv = environmentProvider.currentEnvironment;
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (currentEnv == null) {
+      statusColor = AppTheme.mutedText;
+      statusText = 'No Environment';
+      statusIcon = Icons.circle_outlined;
+    } else {
+      switch (currentEnv.status) {
+        case 'running':
+          statusColor = AppTheme.successColor;
+          statusText = 'Connected';
+          statusIcon = Icons.circle;
+          break;
+        case 'starting':
+          statusColor = AppTheme.warningColor;
+          statusText = 'Starting...';
+          statusIcon = Icons.circle_outlined;
+          break;
+        case 'stopping':
+          statusColor = AppTheme.warningColor;
+          statusText = 'Stopping...';
+          statusIcon = Icons.circle_outlined;
+          break;
+        case 'stopped':
+          statusColor = AppTheme.errorColor;
+          statusText = 'Disconnected';
+          statusIcon = Icons.circle_outlined;
+          break;
+        default:
+          statusColor = AppTheme.mutedText;
+          statusText = currentEnv.status.toUpperCase();
+          statusIcon = Icons.circle_outlined;
+      }
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          statusIcon,
+          size: 12,
+          color: statusColor,
+        ).animate(onPlay: (controller) => controller.repeat())
+            .shimmer(duration: 2.seconds, color: statusColor.withOpacity(0.5)),
+        
+        const SizedBox(width: 6),
+        
+        Text(
+          statusText,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: statusColor,
+            fontWeight: FontWeight.w500,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnvironmentSelector(EnvironmentProvider environmentProvider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: const BoxDecoration(
+        color: AppTheme.darkSurface,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.darkBorder, width: 1),
+        ),
+      ),
+      child: EnvironmentSelector(
+        environments: environmentProvider.environments,
+        currentEnvironment: environmentProvider.currentEnvironment,
+        onEnvironmentChanged: (environment) {
+          environmentProvider.setCurrentEnvironment(environment);
+        },
+        onCreateNew: () => _showCreateEnvironmentDialog(environmentProvider),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppTheme.darkSurface,
+        border: Border(
+          top: BorderSide(color: AppTheme.darkBorder, width: 2),
+        ),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        tabs: _tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
+          final isActive = index == _currentIndex;
+          
+          return Tab(
+            height: 60,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: isActive 
+                    ? tab.activeColor.withOpacity(0.1) 
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: isActive 
+                    ? Border.all(color: tab.activeColor, width: 2)
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    tab.icon,
+                    size: 24,
+                    color: isActive ? tab.activeColor : AppTheme.mutedText,
+                  ).animate(target: isActive ? 1 : 0)
+                      .scale(duration: 200.ms),
+                  
+                  const SizedBox(height: 4),
+                  
+                  Text(
+                    tab.label,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                      color: isActive ? tab.activeColor : AppTheme.mutedText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+        labelPadding: EdgeInsets.zero,
+        indicator: const BoxDecoration(),
+        dividerColor: Colors.transparent,
+      ),
+    );
+  }
+
+  void _showCreateEnvironmentDialog(EnvironmentProvider environmentProvider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CreateEnvironmentSheet(
+        environmentProvider: environmentProvider,
+      ),
+    );
+  }
+}
+
+class TabItem {
+  final IconData icon;
+  final String label;
+  final Color activeColor;
+
+  TabItem({
+    required this.icon,
+    required this.label,
+    required this.activeColor,
+  });
+}
+
+class _CreateEnvironmentSheet extends StatefulWidget {
+  final EnvironmentProvider environmentProvider;
+
+  const _CreateEnvironmentSheet({
+    required this.environmentProvider,
+  });
+
+  @override
+  State<_CreateEnvironmentSheet> createState() => _CreateEnvironmentSheetState();
+}
+
+class _CreateEnvironmentSheetState extends State<_CreateEnvironmentSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  String? _selectedTemplate;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: AppTheme.darkBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(
+          top: BorderSide(color: AppTheme.neonGreen, width: 3),
+          left: BorderSide(color: AppTheme.darkBorder, width: 2),
+          right: BorderSide(color: AppTheme.darkBorder, width: 2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.darkBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Title
+            Text(
+              'Create New Environment',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppTheme.neonGreen,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Form
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    // Name field
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Environment Name',
+                        hintText: 'My Awesome Project',
+                      ),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) {
+                          return 'Please enter a name';
+                        }
+                        return null;
+                      },
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Template selection
+                    const Text(
+                      'Choose Template',
+                      style: TextStyle(
+                        color: AppTheme.secondaryText,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Template options
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: _getTemplateOptions().length,
+                        itemBuilder: (context, index) {
+                          final template = _getTemplateOptions()[index];
+                          final isSelected = _selectedTemplate == template['id'];
+                          
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedTemplate = template['id'];
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              decoration: BoxDecoration(
+                                color: isSelected 
+                                    ? AppTheme.neonBlue.withOpacity(0.1)
+                                    : AppTheme.darkCard,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected 
+                                      ? AppTheme.neonBlue 
+                                      : AppTheme.darkBorder,
+                                  width: 2,
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    template['icon'] as IconData,
+                                    size: 32,
+                                    color: isSelected 
+                                        ? AppTheme.neonBlue 
+                                        : AppTheme.secondaryText,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    template['name'],
+                                    style: TextStyle(
+                                      color: isSelected 
+                                          ? AppTheme.neonBlue 
+                                          : AppTheme.primaryText,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Create button
+                    BrutalistButton(
+                      onPressed: (_selectedTemplate != null && !widget.environmentProvider.isCreating)
+                          ? _createEnvironment
+                          : null,
+                      isLoading: widget.environmentProvider.isCreating,
+                      child: const Text('CREATE ENVIRONMENT'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getTemplateOptions() {
+    return [
+      {
+        'id': 'nodejs',
+        'name': 'Node.js',
+        'icon': Icons.javascript,
+      },
+      {
+        'id': 'python',
+        'name': 'Python',
+        'icon': Icons.code,
+      },
+      {
+        'id': 'react',
+        'name': 'React',
+        'icon': Icons.web,
+      },
+      {
+        'id': 'flutter',
+        'name': 'Flutter',
+        'icon': Icons.phone_android,
+      },
+    ];
+  }
+
+  void _createEnvironment() async {
+    if (!_formKey.currentState!.validate() || _selectedTemplate == null) {
+      return;
+    }
+
+    try {
+      await widget.environmentProvider.createEnvironment(
+        name: _nameController.text.trim(),
+        template: _selectedTemplate!,
+      );
+      
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Environment created successfully!'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create environment: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+}

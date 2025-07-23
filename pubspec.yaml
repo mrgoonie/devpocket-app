@@ -1,0 +1,78 @@
+name: devpocket
+description: A mobile-first cloud IDE that turns your phone into a powerful development machine.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP and API
+  dio: ^5.4.0
+  retrofit: ^4.0.3
+  json_annotation: ^4.8.1
+  
+  # WebSocket
+  web_socket_channel: ^2.4.0
+  
+  # State Management
+  provider: ^6.1.1
+  flutter_riverpod: ^2.4.9
+  
+  # Secure Storage
+  flutter_secure_storage: ^9.0.0
+  
+  # Google Sign In
+  google_sign_in: ^6.1.5
+  
+  # Terminal UI
+  xterm: ^3.5.0
+  
+  # WebView
+  webview_flutter: ^4.4.2
+  
+  # Utilities
+  equatable: ^2.0.5
+  intl: ^0.18.1
+  logger: ^2.0.2+1
+  uuid: ^4.1.0
+  
+  # UI Components
+  cupertino_icons: ^1.0.2
+  flutter_animate: ^4.3.0
+  
+  # JWT handling
+  jwt_decoder: ^2.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.7
+  retrofit_generator: ^8.0.6
+  json_serializable: ^6.7.1
+  flutter_lints: ^3.0.1
+  mockito: ^5.4.2
+
+flutter:
+  uses-material-design: true
+  
+  fonts:
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+        - asset: assets/fonts/JetBrainsMono-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+
+  assets:
+    - assets/images/
+    - assets/icons/
