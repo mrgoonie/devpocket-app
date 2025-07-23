@@ -349,7 +349,16 @@ class AuthManager {
       if (response?.data is Map<String, dynamic>) {
         try {
           final errorResponse = ErrorResponse.fromJson(response!.data);
-          return Exception(errorResponse.detail);
+          // For specific error messages, provide more user-friendly feedback
+          String detail = errorResponse.detail;
+          if (detail.toLowerCase().contains('could not create user')) {
+            detail = 'Unable to create account. The username or email might already be taken.';
+          } else if (detail.toLowerCase().contains('duplicate')) {
+            detail = 'An account with this username or email already exists.';
+          } else if (detail.toLowerCase().contains('validation')) {
+            detail = 'Please check your input and try again.';
+          }
+          return Exception(detail);
         } catch (e) {
           // Fallback to generic error handling
         }
@@ -367,6 +376,13 @@ class AuthManager {
         case 429:
           return Exception('Too many requests. Please try again later.');
         case 500:
+          // Check if this is a specific registration error
+          if (response?.data is Map<String, dynamic>) {
+            final data = response!.data as Map<String, dynamic>;
+            if (data['detail']?.toString().toLowerCase().contains('could not create user') == true) {
+              return Exception('Unable to create account. The username or email might already be taken.');
+            }
+          }
           return Exception('Server error. Please try again later.');
         default:
           return Exception('Network error. Please check your connection.');
