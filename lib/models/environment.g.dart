@@ -1,0 +1,75 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'environment.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+Environment _$EnvironmentFromJson(Map<String, dynamic> json) => Environment(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      template: json['template'] as String,
+      status: json['status'] as String,
+      resources: Resources.fromJson(json['resources'] as Map<String, dynamic>),
+      externalUrl: json['external_url'] as String?,
+      webPort: (json['web_port'] as num?)?.toInt(),
+      createdAt: DateTime.parse(json['created_at'] as String),
+      lastAccessed: json['last_accessed'] == null
+          ? null
+          : DateTime.parse(json['last_accessed'] as String),
+      cpuUsage: (json['cpu_usage'] as num?)?.toDouble(),
+      memoryUsage: (json['memory_usage'] as num?)?.toDouble(),
+      storageUsage: (json['storage_usage'] as num?)?.toDouble(),
+    );
+
+Map<String, dynamic> _$EnvironmentToJson(Environment instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'template': instance.template,
+      'status': instance.status,
+      'resources': instance.resources.toJson(),
+      'external_url': instance.externalUrl,
+      'web_port': instance.webPort,
+      'created_at': instance.createdAt.toIso8601String(),
+      'last_accessed': instance.lastAccessed?.toIso8601String(),
+      'cpu_usage': instance.cpuUsage,
+      'memory_usage': instance.memoryUsage,
+      'storage_usage': instance.storageUsage,
+    };
+
+Resources _$ResourcesFromJson(Map<String, dynamic> json) => Resources(
+      cpu: json['cpu'] as String,
+      memory: json['memory'] as String,
+      storage: json['storage'] as String,
+    );
+
+Map<String, dynamic> _$ResourcesToJson(Resources instance) => <String, dynamic>{
+      'cpu': instance.cpu,
+      'memory': instance.memory,
+      'storage': instance.storage,
+    };
+
+CreateEnvironmentRequest _$CreateEnvironmentRequestFromJson(
+        Map<String, dynamic> json) =>
+    CreateEnvironmentRequest(
+      name: json['name'] as String,
+      template: json['template'] as String,
+      resources: json['resources'] == null
+          ? null
+          : Resources.fromJson(json['resources'] as Map<String, dynamic>),
+      environmentVariables:
+          (json['environment_variables'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
+    );
+
+Map<String, dynamic> _$CreateEnvironmentRequestToJson(
+        CreateEnvironmentRequest instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'template': instance.template,
+      'resources': instance.resources?.toJson(),
+      'environment_variables': instance.environmentVariables,
+    };

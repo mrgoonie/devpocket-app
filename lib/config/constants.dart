@@ -3,12 +3,12 @@ class AppConstants {
   static const String appVersion = '1.0.0';
   
   // API Configuration
-  static const String apiBaseUrl = 'http://localhost:8000';
-  static const String wsBaseUrl = 'ws://localhost:8000';
+  // static const String apiBaseUrl = 'http://localhost:8000';
+  // static const String wsBaseUrl = 'ws://localhost:8000';
   
   // Production URLs (uncomment for production)
-  // static const String apiBaseUrl = 'https://api.devpocket.io';
-  // static const String wsBaseUrl = 'wss://api.devpocket.io';
+  static const String apiBaseUrl = 'https://devpocket.goon.vn';
+  static const String wsBaseUrl = 'wss://devpocket.goon.vn';
   
   // Storage Keys
   static const String accessTokenKey = 'access_token';
