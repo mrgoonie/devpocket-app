@@ -169,7 +169,7 @@ flutter pub run build_runner build --delete-conflicting-outputs
 - follow security best practices
 - focus on human-readable & developer-friendly when writing code
 - high standard of user experience
-- commit the code after every task implemented
+- commit the code in the current branch after every task implemented
 - Keep commits focused on the actual code changes
 - NEVER automatically add AI attribution signatures like:
   "🤖 Generated with [Claude Code]"

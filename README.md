@@ -81,13 +81,13 @@ Before you begin, ensure you have the following installed:
 
    Production API endponts:
    ```dart
-   static const String apiBaseUrl = 'https://devpocket.goon.vn';
-   static const String wsBaseUrl = 'wss://devpocket.goon.vn';
+   static const String apiBaseUrl = 'https://devpocket-api.goon.vn';
+   static const String wsBaseUrl = 'wss://devpocket-api.goon.vn';
    ```
 
    API Docs:
-   - Swagger:  https://devpocket.goon.vn/docs
-   - Redoc:    https://devpocket.goon.vn/redoc
+   - Swagger:  https://devpocket-api.goon.vn/docs
+   - Redoc:    https://devpocket-api.goon.vn/redoc
 
 6. **Configure Google Sign-In**
    

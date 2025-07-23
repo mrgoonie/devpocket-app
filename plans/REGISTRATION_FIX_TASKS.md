@@ -4,7 +4,7 @@
 User registration was failing with a 500 server error "Could not create user" when trying to register new users.
 
 ## Root Cause Analysis
-1. **Server-side issue**: The production API at `https://devpocket.goon.vn/api/v1/auth/register` was returning 500 errors
+1. **Server-side issue**: The production API at `https://devpocket-api.goon.vn/api/v1/auth/register` was returning 500 errors
 2. **Generic error messages**: Client-side error handling was not providing user-friendly feedback for registration-specific errors
 
 ## Tasks Completed
@@ -23,7 +23,7 @@ User registration was failing with a 500 server error "Could not create user" wh
 - Improved validation error messages
 
 ### 2. API Configuration Change
-- Switched from production API (`https://devpocket.goon.vn`) to local development API (`http://localhost:8000`)
+- Switched from production API (`https://devpocket-api.goon.vn`) to local development API (`http://localhost:8000`)
 - This allows testing with a local backend server that should be properly configured
 
 ## Files Modified

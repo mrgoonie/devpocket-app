@@ -54,7 +54,7 @@
   - Fixed syntax errors
 
 ### ✅ API Configuration
-- [x] Restored production API endpoints (`https://devpocket.goon.vn`)
+- [x] Restored production API endpoints (`https://devpocket-api.goon.vn`)
 - [x] Verified API request formats match Swagger documentation
 - [x] Confirmed login uses correct `username_or_email` field
 
