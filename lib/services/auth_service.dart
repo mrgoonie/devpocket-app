@@ -152,11 +152,11 @@ class AuthManager {
     _dio.options.receiveTimeout = const Duration(milliseconds: AppConstants.receiveTimeoutMs);
   }
 
-  Future<AuthResponse> login(String email, String password) async {
+  Future<AuthResponse> login(String usernameOrEmail, String password) async {
     try {
-      _logger.i('Attempting login for email: $email');
+      _logger.i('Attempting login for: $usernameOrEmail');
       final response = await _authService.login({
-        'username_or_email': email.trim(),
+        'username_or_email': usernameOrEmail.trim(),
         'password': password,
       });
       
@@ -165,6 +165,15 @@ class AuthManager {
       return response;
     } catch (e) {
       _logger.e('Login failed', error: e);
+      
+      // Provide more helpful error message for login failures
+      if (e is DioException && e.response?.statusCode == 401) {
+        final errorMessage = _extractErrorMessage(e);
+        if (errorMessage.toLowerCase().contains('incorrect')) {
+          throw Exception('Invalid credentials. Please check your username/email and password. If you just registered, the account might still be setting up - please try again in a moment.');
+        }
+      }
+      
       throw _handleError(e);
     }
   }
@@ -189,6 +198,15 @@ class AuthManager {
       return response;
     } catch (e) {
       _logger.e('Registration failed', error: e);
+      
+      // If registration fails with 500 but user might be created, suggest login
+      if (e is DioException && e.response?.statusCode == 500) {
+        final errorMessage = _extractErrorMessage(e);
+        if (errorMessage.toLowerCase().contains('could not create user')) {
+          throw Exception('Registration completed but there was a server issue. Please try logging in with your credentials.');
+        }
+      }
+      
       throw _handleError(e);
     }
   }
@@ -341,6 +359,19 @@ class AuthManager {
       ),
       StorageService.saveUser(response.user),
     ]);
+  }
+
+  String _extractErrorMessage(DioException error) {
+    try {
+      final response = error.response;
+      if (response?.data is Map<String, dynamic>) {
+        final errorResponse = ErrorResponse.fromJson(response!.data);
+        return errorResponse.detail;
+      }
+    } catch (e) {
+      // Fallback to generic message
+    }
+    return 'Server error occurred';
   }
 
   Exception _handleError(dynamic error) {
