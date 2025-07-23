@@ -327,19 +327,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: RichText(
               text: TextSpan(
                 style: Theme.of(context).textTheme.bodySmall,
-                children: [
-                  const TextSpan(text: 'I agree to the '),
+                children: const [
+                  TextSpan(text: 'I agree to the '),
                   TextSpan(
                     text: 'Terms of Service',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.neonBlue,
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                  const TextSpan(text: ' and '),
+                  TextSpan(text: ' and '),
                   TextSpan(
                     text: 'Privacy Policy',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.neonBlue,
                       decoration: TextDecoration.underline,
                     ),

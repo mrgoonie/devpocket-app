@@ -158,7 +158,7 @@ class _TerminalScreenState extends State<TerminalScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.neonGreen.withOpacity(0.1),
+              color: AppTheme.neonGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppTheme.neonGreen, width: 2),
             ),
@@ -294,7 +294,7 @@ class _TerminalScreenState extends State<TerminalScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.terminal,
               size: 64,
               color: AppTheme.mutedText,
@@ -450,7 +450,7 @@ class _TerminalScreenState extends State<TerminalScreen>
           brightMagenta: AppTheme.terminalTheme['brightMagenta']!,
           brightCyan: AppTheme.terminalTheme['brightCyan']!,
           brightWhite: AppTheme.terminalTheme['brightWhite']!,
-          searchHitBackground: AppTheme.neonYellow.withOpacity(0.4),
+          searchHitBackground: AppTheme.neonYellow.withValues(alpha: 0.4),
           searchHitBackgroundCurrent: AppTheme.neonYellow,
           searchHitForeground: AppTheme.primaryBlack,
         ),

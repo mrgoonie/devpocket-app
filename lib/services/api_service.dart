@@ -103,8 +103,8 @@ class ApiManager {
     ));
 
     // Set timeout configuration
-    _dio.options.connectTimeout = Duration(milliseconds: AppConstants.connectTimeoutMs);
-    _dio.options.receiveTimeout = Duration(milliseconds: AppConstants.receiveTimeoutMs);
+    _dio.options.connectTimeout = const Duration(milliseconds: AppConstants.connectTimeoutMs);
+    _dio.options.receiveTimeout = const Duration(milliseconds: AppConstants.receiveTimeoutMs);
   }
 
   // Environment operations

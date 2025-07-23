@@ -97,7 +97,7 @@ class DevPocketApp extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Please restart the app and try again.',
                 style: TextStyle(
                   color: AppTheme.secondaryText,

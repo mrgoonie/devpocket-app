@@ -104,7 +104,7 @@ class EnvironmentSelector extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected 
-                ? AppTheme.neonGreen.withOpacity(0.1) 
+                ? AppTheme.neonGreen.withValues(alpha: 0.1) 
                 : AppTheme.darkCard,
             borderRadius: BorderRadius.circular(25),
             border: Border.all(
@@ -115,7 +115,7 @@ class EnvironmentSelector extends StatelessWidget {
             ),
             boxShadow: isSelected ? [
               BoxShadow(
-                color: AppTheme.neonGreen.withOpacity(0.3),
+                color: AppTheme.neonGreen.withValues(alpha: 0.3),
                 offset: const Offset(0, 2),
                 blurRadius: 4,
               ),
@@ -139,7 +139,7 @@ class EnvironmentSelector extends StatelessWidget {
                 }
               }).shimmer(
                 duration: 1.5.seconds,
-                color: statusColor.withOpacity(0.5),
+                color: statusColor.withValues(alpha: 0.5),
               ),
               
               const SizedBox(width: 8),
@@ -201,16 +201,16 @@ class EnvironmentSelector extends StatelessWidget {
             style: BorderStyle.solid,
           ),
         ),
-        child: Row(
+        child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.add,
               color: AppTheme.neonPink,
               size: 16,
             ),
-            const SizedBox(width: 4),
-            const Text(
+            SizedBox(width: 4),
+            Text(
               'NEW',
               style: TextStyle(
                 color: AppTheme.neonPink,

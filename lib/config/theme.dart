@@ -43,12 +43,10 @@ class AppTheme {
         onTertiary: primaryBlack,
         surface: darkSurface,
         onSurface: primaryText,
-        background: darkBackground,
-        onBackground: primaryText,
         error: errorColor,
         onError: primaryBlack,
         outline: darkBorder,
-        surfaceVariant: darkCard,
+        surfaceContainerHighest: darkCard,
         onSurfaceVariant: secondaryText,
       ),
       
@@ -101,8 +99,8 @@ class AppTheme {
           ),
         ).copyWith(
           // Add shadow offset for brutalism effect
-          elevation: MaterialStateProperty.all(8),
-          shadowColor: MaterialStateProperty.all(primaryBlack),
+          elevation: WidgetStateProperty.all(8),
+          shadowColor: WidgetStateProperty.all(primaryBlack),
         ),
       ),
       

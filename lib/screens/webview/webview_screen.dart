@@ -4,7 +4,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/theme.dart';
 import '../../models/environment.dart';
 import '../../providers/environment_provider.dart';
-import '../../widgets/brutalist_button.dart';
 
 class WebViewScreen extends StatefulWidget {
   const WebViewScreen({super.key});
@@ -132,22 +131,6 @@ class _WebViewScreenState extends State<WebViewScreen>
     ''');
   }
 
-  void _loadEnvironmentUrl(String environmentId, String? externalUrl, int? webPort) {
-    if (_webViewController == null) return;
-    
-    String url;
-    if (externalUrl != null && externalUrl.isNotEmpty) {
-      url = externalUrl;
-    } else if (webPort != null) {
-      // Construct URL based on port
-      url = 'https://dev-$environmentId.devpocket.io:$webPort';
-    } else {
-      // Default development URL
-      url = 'https://dev-$environmentId.devpocket.io:3000';
-    }
-    
-    _webViewController!.loadRequest(Uri.parse(url));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +182,7 @@ class _WebViewScreenState extends State<WebViewScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.neonBlue.withOpacity(0.1),
+                  color: AppTheme.neonBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppTheme.neonBlue, width: 2),
                 ),

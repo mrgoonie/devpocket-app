@@ -25,7 +25,6 @@ class _LoadingScreenState extends State<LoadingScreen>
   late AnimationController _codeController;
   
   late Animation<double> _containerRotation;
-  late Animation<double> _containerScale;
   late Animation<double> _pulseScale;
   late Animation<Offset> _codeSlide;
 
@@ -67,14 +66,6 @@ class _LoadingScreenState extends State<LoadingScreen>
     ).animate(CurvedAnimation(
       parent: _containerController,
       curve: Curves.linear,
-    ));
-    
-    _containerScale = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _containerController,
-      curve: Curves.easeInOut,
     ));
     
     // Pulse animation
@@ -290,9 +281,9 @@ class _LoadingScreenState extends State<LoadingScreen>
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
+            child: const LinearProgressIndicator(
               backgroundColor: Colors.transparent,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.neonPink),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.neonPink),
               minHeight: 4,
             ),
           ),

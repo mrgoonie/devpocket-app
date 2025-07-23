@@ -1,4 +1,4 @@
-# 📱 Mobile Cloud IDE - Mô tả dự án
+# 📱 DevPocket - Mobile-First Cloud IDE - Project Overview
 
 ## 🎯 Elevator Pitch (30 giây)
 **"Chúng tôi xây dựng Cloud IDE đầu tiên được thiết kế hoàn toàn cho mobile. Hãy tưởng tượng bạn có thể code Python, build app, chạy Docker containers ngay trên iPhone/Android - mọi lúc, mọi nơi. Với 5 triệu developers mobile-first ở Đông Nam Á, đây là thị trường $100M chưa ai khai thác."**
@@ -34,8 +34,8 @@ Transform your phone into a powerful development machine! Code, build, and deplo
 
 **💰 Pricing:**
 - FREE: 1 environment, perfect for learning
-- STARTER ($9/mo): 3 environments, more power
-- PRO ($19/mo): Unlimited possibilities
+- STARTER ($19/mo): 3 environments, more power
+- PRO ($99/mo): Unlimited possibilities
 
 Start coding in 30 seconds - no laptop required! Join thousands of developers who've already made the switch to mobile coding.
 
@@ -87,7 +87,7 @@ DevPocket is the first cloud IDE built from the ground up for mobile devices. We
 - NPS score: 72
 
 ### Business Model
-SaaS subscription: Free/$9/$19/$29 per month
+SaaS subscription: Free/$19/$99 per month
 - 65% gross margins
 - $18 CAC, $180 LTV
 - 10:1 LTV/CAC ratio

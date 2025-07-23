@@ -44,7 +44,7 @@ class ErrorHandler {
       lineLength: 120,
       colors: true,
       printEmojis: true,
-      printTime: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
   );
 
@@ -330,7 +330,6 @@ class ErrorHandler {
         return 'Unable to access device storage. Please check app permissions.';
       case ErrorType.client:
       case ErrorType.unknown:
-      default:
         return error.message;
     }
   }
@@ -347,7 +346,6 @@ class ErrorHandler {
       case ErrorType.client:
       case ErrorType.storage:
       case ErrorType.unknown:
-      default:
         return false;
     }
   }

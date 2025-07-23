@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
-          child: Icon(
+          child: const Icon(
             Icons.terminal,
             size: 48,
             color: AppTheme.primaryBlack,

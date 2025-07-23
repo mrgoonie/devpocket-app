@@ -163,7 +163,7 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 ## Development rules
 
-- always create/update `./plans/<FEATURE_NAME>_TASKS.md` to manage todos in every feature implementation/progress, update status of this file after finish each task
+- always create/update `./plans/<FEATURE_NAME>_TASKS.md` to manage todos before every feature implementation/progress, update status of this file after finish each task
 - ask questions for clarification of uncleared requests
 - implement error catch handler and validation carefully
 - follow security best practices

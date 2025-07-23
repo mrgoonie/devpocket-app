@@ -109,7 +109,7 @@ class _BrutalistButtonState extends State<BrutalistButton>
               ),
               decoration: BoxDecoration(
                 color: widget.onPressed == null || widget.isLoading
-                    ? backgroundColor.withOpacity(0.5)
+                    ? backgroundColor.withValues(alpha: 0.5)
                     : backgroundColor,
                 borderRadius: BorderRadius.circular(borderRadius),
                 border: Border.all(

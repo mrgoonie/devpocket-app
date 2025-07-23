@@ -181,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.neonPink.withOpacity(0.1),
+            color: AppTheme.neonPink.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppTheme.neonPink, width: 2),
           ),
@@ -238,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppTheme.neonGreen.withOpacity(0.2),
+              color: AppTheme.neonGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(color: AppTheme.neonGreen, width: 2),
             ),

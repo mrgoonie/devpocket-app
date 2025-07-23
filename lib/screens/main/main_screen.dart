@@ -79,10 +79,10 @@ class _MainScreenState extends State<MainScreen>
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
-                    children: [
-                      const TerminalScreen(),
-                      const WebViewScreen(),
-                      const SettingsScreen(),
+                    children: const [
+                      TerminalScreen(),
+                      WebViewScreen(),
+                      SettingsScreen(),
                     ],
                   ),
                 ),
@@ -115,7 +115,7 @@ class _MainScreenState extends State<MainScreen>
               color: _tabs[_currentIndex].activeColor,
               fontWeight: FontWeight.w900,
             ),
-          ).animate().shimmer(duration: 2.seconds, color: _tabs[_currentIndex].activeColor.withOpacity(0.3)),
+          ).animate().shimmer(duration: 2.seconds, color: _tabs[_currentIndex].activeColor.withValues(alpha: 0.3)),
           
           const Spacer(),
           
@@ -188,7 +188,7 @@ class _MainScreenState extends State<MainScreen>
           size: 12,
           color: statusColor,
         ).animate(onPlay: (controller) => controller.repeat())
-            .shimmer(duration: 2.seconds, color: statusColor.withOpacity(0.5)),
+            .shimmer(duration: 2.seconds, color: statusColor.withValues(alpha: 0.5)),
         
         const SizedBox(width: 6),
         
@@ -246,7 +246,7 @@ class _MainScreenState extends State<MainScreen>
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 color: isActive 
-                    ? tab.activeColor.withOpacity(0.1) 
+                    ? tab.activeColor.withValues(alpha: 0.1) 
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: isActive 
@@ -433,7 +433,7 @@ class _CreateEnvironmentSheetState extends State<_CreateEnvironmentSheet> {
                               duration: const Duration(milliseconds: 200),
                               decoration: BoxDecoration(
                                 color: isSelected 
-                                    ? AppTheme.neonBlue.withOpacity(0.1)
+                                    ? AppTheme.neonBlue.withValues(alpha: 0.1)
                                     : AppTheme.darkCard,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
