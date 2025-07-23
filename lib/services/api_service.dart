@@ -2,8 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import 'package:logger/logger.dart';
 import '../models/environment.dart';
+import '../models/metrics_response.dart';
+import '../models/template.dart';
 import '../config/constants.dart';
 import '../utils/error_handler.dart';
+import 'auth_service.dart';
 
 part 'api_service.g.dart';
 
@@ -40,10 +43,10 @@ abstract class ApiService {
   Future<void> restartEnvironment(@Path('id') String id);
 
   @GET('/api/v1/environments/{id}/metrics')
-  Future<Map<String, dynamic>> getEnvironmentMetrics(@Path('id') String id);
+  Future<MetricsResponse> getEnvironmentMetrics(@Path('id') String id);
 
   @GET('/api/v1/environments/{id}/logs')
-  Future<Map<String, dynamic>> getEnvironmentLogs(
+  Future<LogsResponse> getEnvironmentLogs(
     @Path('id') String id,
     @Query('lines') int? lines,
     @Query('since') String? since,
@@ -51,10 +54,10 @@ abstract class ApiService {
 
   // Template endpoints
   @GET('/api/v1/templates')
-  Future<List<Map<String, dynamic>>> getTemplates();
+  Future<List<Template>> getTemplates();
 
   @GET('/api/v1/templates/{id}')
-  Future<Map<String, dynamic>> getTemplate(@Path('id') String id);
+  Future<TemplateResponse> getTemplate(@Path('id') String id);
 }
 
 class ApiManager {
@@ -240,7 +243,7 @@ class ApiManager {
     }
   }
 
-  Future<Map<String, dynamic>> getEnvironmentMetrics(String id) async {
+  Future<MetricsResponse> getEnvironmentMetrics(String id) async {
     try {
       _logger.d('Fetching metrics for environment: $id');
       final metrics = await _apiService.getEnvironmentMetrics(id);
@@ -255,7 +258,7 @@ class ApiManager {
     }
   }
 
-  Future<Map<String, dynamic>> getEnvironmentLogs(
+  Future<LogsResponse> getEnvironmentLogs(
     String id, {
     int? lines,
     String? since,
@@ -275,7 +278,7 @@ class ApiManager {
   }
 
   // Template operations
-  Future<List<Map<String, dynamic>>> getTemplates() async {
+  Future<List<Template>> getTemplates() async {
     try {
       _logger.i('Fetching templates');
       final templates = await _apiService.getTemplates();
@@ -287,7 +290,7 @@ class ApiManager {
     }
   }
 
-  Future<Map<String, dynamic>> getTemplate(String id) async {
+  Future<TemplateResponse> getTemplate(String id) async {
     try {
       _logger.d('Fetching template: $id');
       final template = await _apiService.getTemplate(id);

@@ -67,7 +67,7 @@ class AppTheme {
       ),
       
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: darkCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -183,7 +183,7 @@ class AppTheme {
       ),
       
       // Tab Bar Theme
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         labelColor: neonGreen,
         unselectedLabelColor: mutedText,
         indicatorColor: neonGreen,

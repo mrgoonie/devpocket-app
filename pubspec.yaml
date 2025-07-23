@@ -29,7 +29,7 @@ dependencies:
   google_sign_in: ^6.1.5
   
   # Terminal UI
-  xterm: ^3.5.0
+  xterm: ^4.0.0
   
   # WebView
   webview_flutter: ^4.4.2

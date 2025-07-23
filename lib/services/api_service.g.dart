@@ -14,7 +14,7 @@ class _ApiService implements ApiService {
     this.baseUrl,
     this.errorLogger,
   }) {
-    baseUrl ??= 'http://localhost:8000';
+    baseUrl ??= 'https://devpocket.goon.vn';
   }
 
   final Dio _dio;
@@ -264,12 +264,12 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> getEnvironmentMetrics(String id) async {
+  Future<MetricsResponse> getEnvironmentMetrics(String id) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<Map<String, dynamic>>(Options(
+    final _options = _setStreamType<MetricsResponse>(Options(
       method: 'GET',
       headers: _headers,
       extra: _extra,
@@ -286,10 +286,9 @@ class _ApiService implements ApiService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late Map<String, dynamic> _value;
+    late MetricsResponse _value;
     try {
-      _value = _result.data!.map((k, dynamic v) =>
-          MapEntry(k, dynamic.fromJson(v as Map<String, dynamic>)));
+      _value = MetricsResponse.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;
@@ -298,7 +297,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> getEnvironmentLogs(
+  Future<LogsResponse> getEnvironmentLogs(
     String id,
     int? lines,
     String? since,
@@ -311,7 +310,7 @@ class _ApiService implements ApiService {
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<Map<String, dynamic>>(Options(
+    final _options = _setStreamType<LogsResponse>(Options(
       method: 'GET',
       headers: _headers,
       extra: _extra,
@@ -328,10 +327,9 @@ class _ApiService implements ApiService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late Map<String, dynamic> _value;
+    late LogsResponse _value;
     try {
-      _value = _result.data!.map((k, dynamic v) =>
-          MapEntry(k, dynamic.fromJson(v as Map<String, dynamic>)));
+      _value = LogsResponse.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;
@@ -340,12 +338,12 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getTemplates() async {
+  Future<List<Template>> getTemplates() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Map<String, dynamic>>>(Options(
+    final _options = _setStreamType<List<Template>>(Options(
       method: 'GET',
       headers: _headers,
       extra: _extra,
@@ -362,11 +360,10 @@ class _ApiService implements ApiService {
           baseUrl,
         )));
     final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Map<String, dynamic>> _value;
+    late List<Template> _value;
     try {
       _value = _result.data!
-          .map((dynamic i) =>
-              Map<String, dynamic>.fromJson(i as Map<String, dynamic>))
+          .map((dynamic i) => Template.fromJson(i as Map<String, dynamic>))
           .toList();
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
@@ -376,12 +373,12 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> getTemplate(String id) async {
+  Future<TemplateResponse> getTemplate(String id) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<Map<String, dynamic>>(Options(
+    final _options = _setStreamType<TemplateResponse>(Options(
       method: 'GET',
       headers: _headers,
       extra: _extra,
@@ -398,10 +395,9 @@ class _ApiService implements ApiService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late Map<String, dynamic> _value;
+    late TemplateResponse _value;
     try {
-      _value = _result.data!.map((k, dynamic v) =>
-          MapEntry(k, dynamic.fromJson(v as Map<String, dynamic>)));
+      _value = TemplateResponse.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;

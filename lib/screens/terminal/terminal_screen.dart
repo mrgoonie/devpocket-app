@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:xterm/xterm.dart';
+import '../../config/constants.dart';
 import '../../config/theme.dart';
+import '../../models/environment.dart';
 import '../../providers/environment_provider.dart';
 import '../../services/websocket_service.dart';
 import '../../widgets/brutalist_button.dart';
@@ -52,7 +54,7 @@ class _TerminalScreenState extends State<TerminalScreen>
     };
     
     // Handle terminal resize
-    _terminal!.onResize = (width, height) {
+    _terminal!.onResize = (width, height, pixelWidth, pixelHeight) {
       _webSocketService?.resize(width, height);
     };
     
@@ -448,6 +450,9 @@ class _TerminalScreenState extends State<TerminalScreen>
           brightMagenta: AppTheme.terminalTheme['brightMagenta']!,
           brightCyan: AppTheme.terminalTheme['brightCyan']!,
           brightWhite: AppTheme.terminalTheme['brightWhite']!,
+          searchHitBackground: AppTheme.neonYellow.withOpacity(0.4),
+          searchHitBackgroundCurrent: AppTheme.neonYellow,
+          searchHitForeground: AppTheme.primaryBlack,
         ),
       ),
     );

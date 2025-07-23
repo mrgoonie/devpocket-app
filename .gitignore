@@ -47,3 +47,7 @@ next-env.d.ts
 __pycache__
 server.log
 venv
+
+# flutter
+.dart_tool
+build

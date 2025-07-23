@@ -224,14 +224,14 @@
     },
     {
       "name": "xterm",
-      "version": "3.5.0",
+      "version": "4.0.0",
       "dependencies": [
         "convert",
         "equatable",
         "flutter",
         "meta",
-        "platform_info",
-        "quiver"
+        "quiver",
+        "zmodem"
       ]
     },
     {
@@ -864,10 +864,11 @@
       ]
     },
     {
-      "name": "platform_info",
-      "version": "3.2.0",
+      "name": "zmodem",
+      "version": "0.0.6",
       "dependencies": [
-        "meta"
+        "async",
+        "convert"
       ]
     },
     {

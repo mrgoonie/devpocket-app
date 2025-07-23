@@ -264,7 +264,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/icons/google.png',
+                            'assets/images/google.png',
                             height: 20,
                             width: 20,
                           ),
@@ -292,7 +292,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'Join DevPocket',
           style: Theme.of(context).textTheme.displayMedium?.copyWith(
             color: AppTheme.neonPink,
-            fontWeight: FontWeight.black,
+            fontWeight: FontWeight.w900,
           ),
         ),
         const SizedBox(height: 8),

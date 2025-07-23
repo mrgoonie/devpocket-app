@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/theme.dart';
+import '../../models/environment.dart';
 import '../../providers/environment_provider.dart';
 import '../../widgets/brutalist_button.dart';
 

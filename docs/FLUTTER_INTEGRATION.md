@@ -1209,8 +1209,8 @@ class Constants {
   static const String wsBaseUrl = 'ws://localhost:8000';
   
   // Production URLs
-  // static const String apiBaseUrl = 'https://api.devpocket.io';
-  // static const String wsBaseUrl = 'wss://api.devpocket.io';
+  // static const String apiBaseUrl = 'https://devpocket.goon.vn';
+  // static const String wsBaseUrl = 'wss://devpocket.goon.vn';
 }
 ```
 

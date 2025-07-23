@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         onTap: () => _showChangePasswordDialog(authProvider),
                       ),
                       _buildSettingItem(
-                        icon: Icons.notifications_outline,
+                        icon: Icons.notifications_outlined,
                         title: 'Notifications',
                         subtitle: 'Configure notification preferences',
                         onTap: () => _showNotificationsDialog(),
@@ -201,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               'Settings',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: AppTheme.neonPink,
-                fontWeight: FontWeight.black,
+                fontWeight: FontWeight.w900,
               ),
             ),
             Text(

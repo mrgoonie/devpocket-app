@@ -113,7 +113,7 @@ class _MainScreenState extends State<MainScreen>
             'DevPocket',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: _tabs[_currentIndex].activeColor,
-              fontWeight: FontWeight.black,
+              fontWeight: FontWeight.w900,
             ),
           ).animate().shimmer(duration: 2.seconds, color: _tabs[_currentIndex].activeColor.withOpacity(0.3)),
           

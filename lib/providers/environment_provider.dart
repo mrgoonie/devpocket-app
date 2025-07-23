@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import '../models/environment.dart';
+import '../models/template.dart';
+import '../models/metrics_response.dart';
 import '../services/api_service.dart';
 import '../utils/error_handler.dart';
 
@@ -10,7 +12,7 @@ class EnvironmentProvider extends ChangeNotifier {
   
   List<Environment> _environments = [];
   Environment? _currentEnvironment;
-  List<Map<String, dynamic>> _templates = [];
+  List<Template> _templates = [];
   bool _isLoading = false;
   bool _isCreating = false;
   String? _error;
@@ -18,7 +20,7 @@ class EnvironmentProvider extends ChangeNotifier {
   // Getters
   List<Environment> get environments => _environments;
   Environment? get currentEnvironment => _currentEnvironment;
-  List<Map<String, dynamic>> get templates => _templates;
+  List<Template> get templates => _templates;
   bool get isLoading => _isLoading;
   bool get isCreating => _isCreating;
   String? get error => _error;
@@ -246,7 +248,7 @@ class EnvironmentProvider extends ChangeNotifier {
     }
   }
   
-  Future<Map<String, dynamic>> getEnvironmentMetrics(String id) async {
+  Future<MetricsResponse> getEnvironmentMetrics(String id) async {
     try {
       return await _apiManager.getEnvironmentMetrics(id);
     } catch (e) {
@@ -255,7 +257,7 @@ class EnvironmentProvider extends ChangeNotifier {
     }
   }
   
-  Future<Map<String, dynamic>> getEnvironmentLogs(
+  Future<LogsResponse> getEnvironmentLogs(
     String id, {
     int? lines,
     String? since,

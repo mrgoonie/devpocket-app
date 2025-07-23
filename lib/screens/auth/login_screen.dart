@@ -157,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/icons/google.png',
+                            'assets/images/google.png',
                             height: 20,
                             width: 20,
                           ),
@@ -214,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'DevPocket',
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
             color: AppTheme.neonGreen,
-            fontWeight: FontWeight.black,
+            fontWeight: FontWeight.w900,
             letterSpacing: -1,
           ),
         ),
