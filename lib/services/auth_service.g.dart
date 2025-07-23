@@ -14,7 +14,7 @@ class _AuthService implements AuthService {
     this.baseUrl,
     this.errorLogger,
   }) {
-    baseUrl ??= 'https://devpocket.goon.vn';
+    baseUrl ??= 'http://localhost:8000';
   }
 
   final Dio _dio;

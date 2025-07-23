@@ -166,15 +166,25 @@ class AuthManager {
     } catch (e) {
       _logger.e('Login failed', error: e);
       
-      // Provide more helpful error message for login failures
-      if (e is DioException && e.response?.statusCode == 401) {
+      // Enhanced error handling for login
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
         final errorMessage = _extractErrorMessage(e);
-        if (errorMessage.toLowerCase().contains('incorrect')) {
-          throw Exception('Invalid credentials. Please check your username/email and password. If you just registered, the account might still be setting up - please try again in a moment.');
+        
+        if (statusCode == 401) {
+          if (errorMessage.toLowerCase().contains('incorrect')) {
+            throw Exception('Invalid credentials. Please check your username/email and password. If you just registered, please wait a moment and try again.');
+          } else {
+            throw Exception('Authentication failed. Please verify your credentials and try again.');
+          }
+        } else if (statusCode == 404) {
+          throw Exception('User not found. Please check your username/email or register for a new account.');
+        } else if (statusCode == 429) {
+          throw Exception('Too many login attempts. Please wait a few minutes and try again.');
         }
       }
       
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -199,15 +209,30 @@ class AuthManager {
     } catch (e) {
       _logger.e('Registration failed', error: e);
       
-      // If registration fails with 500 but user might be created, suggest login
-      if (e is DioException && e.response?.statusCode == 500) {
+      // Enhanced error handling for registration
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
         final errorMessage = _extractErrorMessage(e);
-        if (errorMessage.toLowerCase().contains('could not create user')) {
-          throw Exception('Registration completed but there was a server issue. Please try logging in with your credentials.');
+        
+        if (statusCode == 500) {
+          // Server error - could be user created but response failed
+          if (errorMessage.toLowerCase().contains('could not create user') ||
+              errorMessage.toLowerCase().contains('duplicate') ||
+              errorMessage.toLowerCase().contains('already exists')) {
+            throw Exception('Registration may have succeeded but there was a server error. Please try logging in with your credentials, or try a different username/email if the account already exists.');
+          } else {
+            throw Exception('Server error during registration. Please try again or contact support if the issue persists.');
+          }
+        } else if (statusCode == 409) {
+          // Conflict - user already exists
+          throw Exception('An account with this username or email already exists. Please try logging in or use different credentials.');
+        } else if (statusCode == 400) {
+          // Bad request - validation error
+          throw Exception('Invalid registration data. Please check your input and try again.');
         }
       }
       
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -238,7 +263,7 @@ class AuthManager {
     } catch (e) {
       _logger.e('Google Sign-In failed', error: e);
       await _googleSignIn.signOut(); // Clean up on failure
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -258,7 +283,7 @@ class AuthManager {
       return user;
     } catch (e) {
       _logger.e('Failed to get user profile', error: e);
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -287,7 +312,7 @@ class AuthManager {
       _logger.i('Password changed successfully');
     } catch (e) {
       _logger.e('Password change failed', error: e);
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -299,7 +324,7 @@ class AuthManager {
       _logger.i('Password reset email sent');
     } catch (e) {
       _logger.e('Forgot password failed', error: e);
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -315,7 +340,7 @@ class AuthManager {
       _logger.i('Password reset successful');
     } catch (e) {
       _logger.e('Password reset failed', error: e);
-      throw _handleError(e);
+      throw await _handleErrorWithConnectivityCheck(e);
     }
   }
 
@@ -372,6 +397,48 @@ class AuthManager {
       // Fallback to generic message
     }
     return 'Server error occurred';
+  }
+
+  // Helper method to check server connectivity
+  Future<bool> checkServerHealth() async {
+    try {
+      final response = await _dio.get(
+        '${AppConstants.apiBaseUrl}/health',
+        options: Options(
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      _logger.w('Server health check failed', error: e);
+      return false;
+    }
+  }
+
+  // Enhanced error handler with connectivity check
+  Future<Exception> _handleErrorWithConnectivityCheck(dynamic error) async {
+    if (error is DioException) {
+      // Check for connection errors
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.connectionError) {
+        
+        // Check if it's a localhost connection issue
+        if (AppConstants.apiBaseUrl.contains('localhost')) {
+          return Exception('Cannot connect to local server. Please make sure your development server is running on ${AppConstants.apiBaseUrl}');
+        } else {
+          final isServerUp = await checkServerHealth();
+          if (!isServerUp) {
+            return Exception('Server is not responding. Please check your internet connection or try again later.');
+          }
+        }
+        return Exception('Connection timeout. Please check your network connection and try again.');
+      }
+    }
+    
+    return _handleError(error);
   }
 
   Exception _handleError(dynamic error) {

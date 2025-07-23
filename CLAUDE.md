@@ -177,3 +177,4 @@ flutter pub run build_runner build --delete-conflicting-outputs
   Any AI tool attribution or signature
 - Create clean, professional commit messages without AI references. Use conventional commit format.
 - use `context7` MCP tool for documentation during implementation
+- read Serena's initial instructions (serena mcp tools) before processing any task
