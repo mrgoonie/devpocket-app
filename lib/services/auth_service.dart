@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -127,6 +126,8 @@ class AuthManager {
   static final _logger = Logger();
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    // iOS client ID from GoogleService-Info.plist
+    clientId: '331656256423-gfjk0ohtpjtnvad19c6mdeeisnuiqeg7.apps.googleusercontent.com',
   );
   
   late final Dio _dio;
