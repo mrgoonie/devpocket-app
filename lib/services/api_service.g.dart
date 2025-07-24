@@ -73,7 +73,7 @@ class _ApiService implements ApiService {
     )
         .compose(
           _dio.options,
-          '/api/v1/environments/',
+          '/api/v1/environments',
           queryParameters: queryParameters,
           data: _data,
         )
@@ -419,7 +419,7 @@ class _ApiService implements ApiService {
     )
         .compose(
           _dio.options,
-          '/api/v1/templates/',
+          '/api/v1/templates',
           queryParameters: queryParameters,
           data: _data,
         )

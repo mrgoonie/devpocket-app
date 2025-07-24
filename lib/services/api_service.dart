@@ -20,7 +20,7 @@ abstract class ApiService {
   @GET('/api/v1/environments')
   Future<List<Environment>> getEnvironments();
 
-  @POST('/api/v1/environments/')
+  @POST('/api/v1/environments')
   Future<Environment> createEnvironment(
       @Body() CreateEnvironmentRequest request);
 
@@ -62,7 +62,7 @@ abstract class ApiService {
   @GET('/api/v1/templates/{id}')
   Future<TemplateResponse> getTemplate(@Path('id') String id);
 
-  @POST('/api/v1/templates/')
+  @POST('/api/v1/templates')
   Future<Template> createTemplate(@Body() Map<String, dynamic> body);
 
   @PUT('/api/v1/templates/{id}')
