@@ -1,4 +1,4 @@
-# 📱 DevPocket - Mobile-First Cloud IDE - Project Overview
+# 📱 DevPocket - Mobile-First Cloud IDE app - Project Overview
 
 ## 🎯 Elevator Pitch (30 giây)
 **"Chúng tôi xây dựng Cloud IDE đầu tiên được thiết kế hoàn toàn cho mobile. Hãy tưởng tượng bạn có thể code Python, build app, chạy Docker containers ngay trên iPhone/Android - mọi lúc, mọi nơi. Với 5 triệu developers mobile-first ở Đông Nam Á, đây là thị trường $100M chưa ai khai thác."**

@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:equatable/equatable.dart';
+import 'enums.dart';
+import 'resource_limits.dart';
 
 part 'environment.g.dart';
 
@@ -7,33 +9,57 @@ part 'environment.g.dart';
 class Environment extends Equatable {
   final String id;
   final String name;
-  final String template;
-  final String status;
-  final Resources resources;
+  
+  @JsonKey(name: 'template_id')
+  final String templateId;
+  
+  final EnvironmentStatus status;
+  
+  @JsonKey(name: 'resource_limits')
+  final ResourceLimits resourceLimits;
+  
+  @JsonKey(name: 'environment_variables')
+  final Map<String, String> environmentVariables;
+  
   @JsonKey(name: 'external_url')
   final String? externalUrl;
+  
   @JsonKey(name: 'web_port')
   final int? webPort;
+  
+  @JsonKey(name: 'ssh_port')
+  final int? sshPort;
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
+  
+  @JsonKey(name: 'updated_at')
+  final DateTime updatedAt;
+  
   @JsonKey(name: 'last_accessed')
   final DateTime? lastAccessed;
+  
   @JsonKey(name: 'cpu_usage')
   final double? cpuUsage;
+  
   @JsonKey(name: 'memory_usage')
   final double? memoryUsage;
+  
   @JsonKey(name: 'storage_usage')
   final double? storageUsage;
 
   const Environment({
     required this.id,
     required this.name,
-    required this.template,
+    required this.templateId,
     required this.status,
-    required this.resources,
+    required this.resourceLimits,
+    required this.environmentVariables,
     this.externalUrl,
     this.webPort,
+    this.sshPort,
     required this.createdAt,
+    required this.updatedAt,
     this.lastAccessed,
     this.cpuUsage,
     this.memoryUsage,
@@ -47,12 +73,15 @@ class Environment extends Equatable {
   Environment copyWith({
     String? id,
     String? name,
-    String? template,
-    String? status,
-    Resources? resources,
+    String? templateId,
+    EnvironmentStatus? status,
+    ResourceLimits? resourceLimits,
+    Map<String, String>? environmentVariables,
     String? externalUrl,
     int? webPort,
+    int? sshPort,
     DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? lastAccessed,
     double? cpuUsage,
     double? memoryUsage,
@@ -61,12 +90,15 @@ class Environment extends Equatable {
     return Environment(
       id: id ?? this.id,
       name: name ?? this.name,
-      template: template ?? this.template,
+      templateId: templateId ?? this.templateId,
       status: status ?? this.status,
-      resources: resources ?? this.resources,
+      resourceLimits: resourceLimits ?? this.resourceLimits,
+      environmentVariables: environmentVariables ?? this.environmentVariables,
       externalUrl: externalUrl ?? this.externalUrl,
       webPort: webPort ?? this.webPort,
+      sshPort: sshPort ?? this.sshPort,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       lastAccessed: lastAccessed ?? this.lastAccessed,
       cpuUsage: cpuUsage ?? this.cpuUsage,
       memoryUsage: memoryUsage ?? this.memoryUsage,
@@ -78,12 +110,15 @@ class Environment extends Equatable {
   List<Object?> get props => [
     id,
     name,
-    template,
+    templateId,
     status,
-    resources,
+    resourceLimits,
+    environmentVariables,
     externalUrl,
     webPort,
+    sshPort,
     createdAt,
+    updatedAt,
     lastAccessed,
     cpuUsage,
     memoryUsage,
@@ -114,15 +149,20 @@ class Resources extends Equatable {
 @JsonSerializable(explicitToJson: true)
 class CreateEnvironmentRequest extends Equatable {
   final String name;
-  final String template;
-  final Resources? resources;
+  
+  @JsonKey(name: 'template_id')
+  final String templateId;
+  
+  @JsonKey(name: 'resource_limits')
+  final ResourceLimits? resourceLimits;
+  
   @JsonKey(name: 'environment_variables')
   final Map<String, String>? environmentVariables;
 
   const CreateEnvironmentRequest({
     required this.name,
-    required this.template,
-    this.resources,
+    required this.templateId,
+    this.resourceLimits,
     this.environmentVariables,
   });
 
@@ -131,5 +171,5 @@ class CreateEnvironmentRequest extends Equatable {
   Map<String, dynamic> toJson() => _$CreateEnvironmentRequestToJson(this);
 
   @override
-  List<Object?> get props => [name, template, resources, environmentVariables];
+  List<Object?> get props => [name, templateId, resourceLimits, environmentVariables];
 }

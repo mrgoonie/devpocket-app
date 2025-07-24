@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../models/environment.dart';
 import '../models/metrics_response.dart';
 import '../models/template.dart';
+import '../models/resource_limits.dart';
 import '../config/constants.dart';
 import '../utils/error_handler.dart';
 import 'auth_service.dart';
@@ -122,17 +123,17 @@ class ApiManager {
 
   Future<Environment> createEnvironment({
     required String name,
-    required String template,
-    Resources? resources,
+    required String templateId,
+    ResourceLimits? resourceLimits,
     Map<String, String>? environmentVariables,
   }) async {
     try {
-      _logger.i('Creating environment: $name with template: $template');
+      _logger.i('Creating environment: $name with template: $templateId');
       
       final request = CreateEnvironmentRequest(
         name: name,
-        template: template,
-        resources: resources,
+        templateId: templateId,
+        resourceLimits: resourceLimits,
         environmentVariables: environmentVariables,
       );
       
@@ -143,7 +144,7 @@ class ApiManager {
       ErrorHandler.logError(
         'Failed to create environment',
         error: e,
-        context: {'name': name, 'template': template},
+        context: {'name': name, 'templateId': templateId},
       );
       rethrow;
     }

@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:logger/logger.dart';
 import '../models/auth_response.dart';
+import '../models/token.dart';
 import '../models/user.dart';
 import '../models/error_response.dart';
 import '../config/constants.dart';
@@ -17,18 +18,18 @@ abstract class AuthService {
   factory AuthService(Dio dio, {String baseUrl}) = _AuthService;
 
   @POST('/api/v1/auth/register')
-  Future<AuthResponse> register(@Body() Map<String, dynamic> body);
+  Future<Token> register(@Body() Map<String, dynamic> body);
 
   @POST('/api/v1/auth/login')
-  Future<AuthResponse> login(@Body() Map<String, dynamic> body);
+  Future<Token> login(@Body() Map<String, dynamic> body);
 
   @POST('/api/v1/auth/google')
-  Future<AuthResponse> googleSignIn(@Body() Map<String, dynamic> body);
+  Future<Token> googleSignIn(@Body() Map<String, dynamic> body);
 
   @POST('/api/v1/auth/refresh')
-  Future<AuthResponse> refreshToken(@Body() Map<String, dynamic> body);
+  Future<Token> refreshToken(@Body() Map<String, dynamic> body);
 
-  @GET('/api/v1/auth/profile')
+  @GET('/api/v1/auth/me')
   Future<User> getProfile();
 
   @POST('/api/v1/auth/logout')
@@ -78,15 +79,15 @@ class AuthInterceptor extends Interceptor {
             data: {'refresh_token': refreshToken},
           );
           
-          final authResponse = AuthResponse.fromJson(response.data);
+          final token = Token.fromJson(response.data);
           await StorageService.saveTokens(
-            accessToken: authResponse.accessToken,
-            refreshToken: authResponse.refreshToken,
+            accessToken: token.accessToken,
+            refreshToken: token.refreshToken,
           );
           
           // Retry original request with new token
           err.requestOptions.headers['Authorization'] = 
-              'Bearer ${authResponse.accessToken}';
+              'Bearer ${token.accessToken}';
           
           final cloneReq = await dio.request(
             err.requestOptions.path,
@@ -155,14 +156,32 @@ class AuthManager {
   Future<AuthResponse> login(String usernameOrEmail, String password) async {
     try {
       _logger.i('Attempting login for: $usernameOrEmail');
-      final response = await _authService.login({
+      final tokenResponse = await _authService.login({
         'username_or_email': usernameOrEmail.trim(),
         'password': password,
       });
       
-      await _saveAuthData(response);
+      // Save tokens
+      await StorageService.saveTokens(
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+      );
+      
+      // Fetch user profile
+      final user = await _authService.getProfile();
+      await StorageService.saveUser(user);
+      
+      // Create AuthResponse for compatibility
+      final authResponse = AuthResponse(
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+        tokenType: tokenResponse.tokenType,
+        expiresIn: tokenResponse.expiresIn,
+        user: user,
+      );
+      
       _logger.i('Login successful');
-      return response;
+      return authResponse;
     } catch (e) {
       _logger.e('Login failed', error: e);
       
@@ -196,16 +215,34 @@ class AuthManager {
   }) async {
     try {
       _logger.i('Attempting registration for email: $email');
-      final response = await _authService.register({
+      final tokenResponse = await _authService.register({
         'username': username.trim(),
         'email': email.trim(),
         'password': password,
         if (fullName != null && fullName.isNotEmpty) 'full_name': fullName.trim(),
       });
       
-      await _saveAuthData(response);
+      // Save tokens
+      await StorageService.saveTokens(
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+      );
+      
+      // Fetch user profile
+      final user = await _authService.getProfile();
+      await StorageService.saveUser(user);
+      
+      // Create AuthResponse for compatibility
+      final authResponse = AuthResponse(
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+        tokenType: tokenResponse.tokenType,
+        expiresIn: tokenResponse.expiresIn,
+        user: user,
+      );
+      
       _logger.i('Registration successful');
-      return response;
+      return authResponse;
     } catch (e) {
       _logger.e('Registration failed', error: e);
       
@@ -252,14 +289,32 @@ class AuthManager {
         throw Exception('Failed to get Google ID token');
       }
 
-      final response = await _authService.googleSignIn({
+      final tokenResponse = await _authService.googleSignIn({
         'id_token': googleAuth.idToken!,
         'access_token': googleAuth.accessToken,
       });
       
-      await _saveAuthData(response);
+      // Save tokens
+      await StorageService.saveTokens(
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+      );
+      
+      // Fetch user profile
+      final user = await _authService.getProfile();
+      await StorageService.saveUser(user);
+      
+      // Create AuthResponse for compatibility
+      final authResponse = AuthResponse(
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+        tokenType: tokenResponse.tokenType,
+        expiresIn: tokenResponse.expiresIn,
+        user: user,
+      );
+      
       _logger.i('Google Sign-In successful');
-      return response;
+      return authResponse;
     } catch (e) {
       _logger.e('Google Sign-In failed', error: e);
       await _googleSignIn.signOut(); // Clean up on failure
@@ -358,10 +413,13 @@ class AuthManager {
         }
         // Try to refresh the token
         try {
-          final response = await _authService.refreshToken({
+          final tokenResponse = await _authService.refreshToken({
             'refresh_token': refreshToken,
           });
-          await _saveAuthData(response);
+          await StorageService.saveTokens(
+            accessToken: tokenResponse.accessToken,
+            refreshToken: tokenResponse.refreshToken,
+          );
           return true;
         } catch (e) {
           await StorageService.clearAll();
@@ -376,15 +434,6 @@ class AuthManager {
     }
   }
 
-  Future<void> _saveAuthData(AuthResponse response) async {
-    await Future.wait([
-      StorageService.saveTokens(
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-      ),
-      StorageService.saveUser(response.user),
-    ]);
-  }
 
   String _extractErrorMessage(DioException error) {
     try {

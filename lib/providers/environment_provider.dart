@@ -3,6 +3,8 @@ import 'package:logger/logger.dart';
 import '../models/environment.dart';
 import '../models/template.dart';
 import '../models/metrics_response.dart';
+import '../models/resource_limits.dart';
+import '../models/enums.dart';
 import '../services/api_service.dart';
 import '../utils/error_handler.dart';
 
@@ -27,10 +29,10 @@ class EnvironmentProvider extends ChangeNotifier {
   
   // Filter environments by status
   List<Environment> get runningEnvironments => 
-      _environments.where((env) => env.status == 'running').toList();
+      _environments.where((env) => env.status == EnvironmentStatus.running).toList();
   
   List<Environment> get stoppedEnvironments => 
-      _environments.where((env) => env.status == 'stopped').toList();
+      _environments.where((env) => env.status == EnvironmentStatus.stopped).toList();
   
   EnvironmentProvider() {
     _initialize();
@@ -73,8 +75,8 @@ class EnvironmentProvider extends ChangeNotifier {
   
   Future<void> createEnvironment({
     required String name,
-    required String template,
-    Resources? resources,
+    required String templateId,
+    ResourceLimits? resourceLimits,
     Map<String, String>? environmentVariables,
   }) async {
     _setCreating(true);
@@ -85,8 +87,8 @@ class EnvironmentProvider extends ChangeNotifier {
       
       final environment = await _apiManager.createEnvironment(
         name: name,
-        template: template,
-        resources: resources,
+        templateId: templateId,
+        resourceLimits: resourceLimits,
         environmentVariables: environmentVariables,
       );
       
@@ -112,7 +114,7 @@ class EnvironmentProvider extends ChangeNotifier {
       _logger.i('Starting environment: $id');
       
       // Optimistically update UI
-      _updateEnvironmentStatus(id, 'starting');
+      _updateEnvironmentStatus(id, EnvironmentStatus.running);
       
       await _apiManager.startEnvironment(id);
       
@@ -138,7 +140,7 @@ class EnvironmentProvider extends ChangeNotifier {
       _logger.i('Stopping environment: $id');
       
       // Optimistically update UI
-      _updateEnvironmentStatus(id, 'stopping');
+      _updateEnvironmentStatus(id, EnvironmentStatus.stopped);
       
       await _apiManager.stopEnvironment(id);
       
@@ -164,7 +166,7 @@ class EnvironmentProvider extends ChangeNotifier {
       _logger.i('Restarting environment: $id');
       
       // Optimistically update UI
-      _updateEnvironmentStatus(id, 'restarting');
+      _updateEnvironmentStatus(id, EnvironmentStatus.running);
       
       await _apiManager.restartEnvironment(id);
       
@@ -234,7 +236,7 @@ class EnvironmentProvider extends ChangeNotifier {
     }
   }
   
-  void _updateEnvironmentStatus(String id, String status) {
+  void _updateEnvironmentStatus(String id, EnvironmentStatus status) {
     final index = _environments.indexWhere((env) => env.id == id);
     if (index != -1) {
       _environments[index] = _environments[index].copyWith(status: status);

@@ -232,7 +232,7 @@ abstract class AuthService {
   @POST('/api/v1/auth/refresh')
   Future<AuthResponse> refreshToken(@Body() Map<String, dynamic> body);
 
-  @GET('/api/v1/auth/profile')
+  @GET('/api/v1/auth/me')
   Future<User> getProfile();
 
   @POST('/api/v1/auth/logout')

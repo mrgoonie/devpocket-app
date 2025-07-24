@@ -84,13 +84,18 @@ lib/
 
 ## API Integration
 
+**OpenAPI docs**: https://devpocket-api.goon.vn/openapi.json
+
 ### Base URLs
-- Development: `http://localhost:8000` (API), `ws://localhost:8000` (WebSocket)
+- Development: `https://devpocket-api.goon.vn` (API), `wss://devpocket-api.goon.vn` (WebSocket)
 - Production: Update `constants.dart` with production URLs
 
 ### Key Endpoints
-- Auth: `/api/v1/auth/{login,register,refresh,profile}`
+- Healthz: `/api/v1/health`
+- Auth: `/api/v1/auth/{login,register,google,logout,me,verify-email}`
 - Environments: `/api/v1/environments` (CRUD operations)
+- Clusters: `/api/v1/clusters` (CRUD operations)
+- Templates: `/api/v1/templates` (CRUD operations)
 - WebSocket: `/api/v1/ws/terminal/{environmentId}`
 
 ### Error Handling

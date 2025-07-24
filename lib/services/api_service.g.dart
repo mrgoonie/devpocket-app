@@ -14,7 +14,7 @@ class _ApiService implements ApiService {
     this.baseUrl,
     this.errorLogger,
   }) {
-    baseUrl ??= 'http://localhost:8000';
+    baseUrl ??= 'https://devpocket-api.goon.vn';
   }
 
   final Dio _dio;

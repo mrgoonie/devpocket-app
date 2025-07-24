@@ -14,7 +14,7 @@ class _AuthService implements AuthService {
     this.baseUrl,
     this.errorLogger,
   }) {
-    baseUrl ??= 'http://localhost:8000';
+    baseUrl ??= 'https://devpocket-api.goon.vn';
   }
 
   final Dio _dio;
@@ -24,13 +24,13 @@ class _AuthService implements AuthService {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<AuthResponse> register(Map<String, dynamic> body) async {
+  Future<Token> register(Map<String, dynamic> body) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body);
-    final _options = _setStreamType<AuthResponse>(Options(
+    final _options = _setStreamType<Token>(Options(
       method: 'POST',
       headers: _headers,
       extra: _extra,
@@ -47,9 +47,9 @@ class _AuthService implements AuthService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late AuthResponse _value;
+    late Token _value;
     try {
-      _value = AuthResponse.fromJson(_result.data!);
+      _value = Token.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;
@@ -58,13 +58,13 @@ class _AuthService implements AuthService {
   }
 
   @override
-  Future<AuthResponse> login(Map<String, dynamic> body) async {
+  Future<Token> login(Map<String, dynamic> body) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body);
-    final _options = _setStreamType<AuthResponse>(Options(
+    final _options = _setStreamType<Token>(Options(
       method: 'POST',
       headers: _headers,
       extra: _extra,
@@ -81,9 +81,9 @@ class _AuthService implements AuthService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late AuthResponse _value;
+    late Token _value;
     try {
-      _value = AuthResponse.fromJson(_result.data!);
+      _value = Token.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;
@@ -92,13 +92,13 @@ class _AuthService implements AuthService {
   }
 
   @override
-  Future<AuthResponse> googleSignIn(Map<String, dynamic> body) async {
+  Future<Token> googleSignIn(Map<String, dynamic> body) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body);
-    final _options = _setStreamType<AuthResponse>(Options(
+    final _options = _setStreamType<Token>(Options(
       method: 'POST',
       headers: _headers,
       extra: _extra,
@@ -115,9 +115,9 @@ class _AuthService implements AuthService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late AuthResponse _value;
+    late Token _value;
     try {
-      _value = AuthResponse.fromJson(_result.data!);
+      _value = Token.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;
@@ -126,13 +126,13 @@ class _AuthService implements AuthService {
   }
 
   @override
-  Future<AuthResponse> refreshToken(Map<String, dynamic> body) async {
+  Future<Token> refreshToken(Map<String, dynamic> body) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body);
-    final _options = _setStreamType<AuthResponse>(Options(
+    final _options = _setStreamType<Token>(Options(
       method: 'POST',
       headers: _headers,
       extra: _extra,
@@ -149,9 +149,9 @@ class _AuthService implements AuthService {
           baseUrl,
         )));
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late AuthResponse _value;
+    late Token _value;
     try {
-      _value = AuthResponse.fromJson(_result.data!);
+      _value = Token.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;
@@ -172,7 +172,7 @@ class _AuthService implements AuthService {
     )
         .compose(
           _dio.options,
-          '/api/v1/auth/profile',
+          '/api/v1/auth/me',
           queryParameters: queryParameters,
           data: _data,
         )

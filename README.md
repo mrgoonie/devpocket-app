@@ -223,7 +223,9 @@ DevPocket requires a backend server that provides:
    - POST `/api/v1/auth/register`
    - POST `/api/v1/auth/google`
    - POST `/api/v1/auth/refresh`
-   - GET `/api/v1/auth/profile`
+   - GET `/api/v1/auth/me`
+   - POST `/api/v1/auth/logout`
+   - POST `/api/v1/auth/verify-email`
 
 2. **Environment Management API**
    - GET `/api/v1/environments`
@@ -233,9 +235,26 @@ DevPocket requires a backend server that provides:
    - DELETE `/api/v1/environments/{id}`
    - POST `/api/v1/environments/{id}/start`
    - POST `/api/v1/environments/{id}/stop`
+   - POST `/api/v1/environments/{id}/restart`
+   - GET `/api/v1/environments/{id}/metrics`
+   - GET `/api/v1/environments/{id}/logs`
 
 3. **WebSocket Terminal API**
    - WS `/api/v1/ws/terminal/{environmentId}`
+
+4. **Cluster Management API**
+   - GET `/api/v1/clusters`
+   - POST `/api/v1/clusters`
+   - GET `/api/v1/clusters/{id}`
+   - PUT `/api/v1/clusters/{id}`
+   - DELETE `/api/v1/clusters/{id}`
+
+5. **Template Management API**
+   - GET `/api/v1/templates`
+   - POST `/api/v1/templates`
+   - GET `/api/v1/templates/{id}`
+   - PUT `/api/v1/templates/{id}`
+   - DELETE `/api/v1/templates/{id}`
 
 See `docs/FLUTTER_INTEGRATION.md` for complete API documentation.
 
