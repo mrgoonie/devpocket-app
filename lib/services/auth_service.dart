@@ -157,6 +157,47 @@ class AuthManager {
 
   void _setupInterceptors() {
     _dio.interceptors.add(AuthInterceptor());
+    
+    // Add redirect handler interceptor
+    _dio.interceptors.add(InterceptorsWrapper(
+      onResponse: (response, handler) {
+        // Handle redirects manually
+        if (response.statusCode == 301 || response.statusCode == 302 || response.statusCode == 307) {
+          final location = response.headers.value('location');
+          if (location != null) {
+            _logger.d('Following redirect from ${response.requestOptions.path} to: $location');
+            
+            // Construct the full URL for redirect
+            String redirectUrl;
+            if (location.startsWith('http')) {
+              redirectUrl = location;
+            } else if (location.startsWith('/')) {
+              // Absolute path - use same base URL
+              redirectUrl = '${response.requestOptions.baseUrl}$location';
+            } else {
+              // Relative path - append to current path
+              final currentPath = response.requestOptions.path;
+              final basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+              redirectUrl = '${response.requestOptions.baseUrl}$basePath$location';
+            }
+            
+            // Make a new request to the redirect location
+            final newRequest = response.requestOptions.copyWith(
+              path: redirectUrl.replaceFirst(response.requestOptions.baseUrl, ''),
+            );
+            
+            _dio.fetch(newRequest).then((redirectResponse) {
+              handler.resolve(redirectResponse);
+            }).catchError((error) {
+              handler.reject(error);
+            });
+            return;
+          }
+        }
+        handler.next(response);
+      },
+    ));
+    
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
