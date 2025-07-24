@@ -141,6 +141,10 @@ class ApiManager {
         const Duration(milliseconds: AppConstants.connectTimeoutMs);
     _dio.options.receiveTimeout =
         const Duration(milliseconds: AppConstants.receiveTimeoutMs);
+    
+    // Disable automatic redirect following to prevent redirect loops
+    _dio.options.followRedirects = false;
+    _dio.options.maxRedirects = 0;
   }
 
   // Environment operations

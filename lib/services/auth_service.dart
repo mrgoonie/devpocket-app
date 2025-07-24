@@ -55,9 +55,6 @@ abstract class AuthService {
 
   @DELETE('/api/v1/users/me')
   Future<void> deleteAccount();
-
-  @GET('/api/v1/health')
-  Future<Map<String, dynamic>> healthCheck();
 }
 
 class AuthInterceptor extends Interceptor {
@@ -177,6 +174,10 @@ class AuthManager {
         const Duration(milliseconds: AppConstants.connectTimeoutMs);
     _dio.options.receiveTimeout =
         const Duration(milliseconds: AppConstants.receiveTimeoutMs);
+    
+    // Disable automatic redirect following to prevent redirect loops
+    _dio.options.followRedirects = false;
+    _dio.options.maxRedirects = 0;
   }
 
   Future<AuthResponse> login(String usernameOrEmail, String password) async {
