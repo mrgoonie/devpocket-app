@@ -10,16 +10,16 @@ class Environment extends Equatable {
   final String id;
   final String name;
 
-  @JsonKey(name: 'template_id')
+  @JsonKey(name: 'template')
   final String templateId;
 
   final EnvironmentStatus status;
 
-  @JsonKey(name: 'resource_limits')
+  @JsonKey(name: 'resources')
   final ResourceLimits resourceLimits;
 
   @JsonKey(name: 'environment_variables')
-  final Map<String, String> environmentVariables;
+  final Map<String, String>? environmentVariables;
 
   @JsonKey(name: 'external_url')
   final String? externalUrl;
@@ -34,7 +34,7 @@ class Environment extends Equatable {
   final DateTime createdAt;
 
   @JsonKey(name: 'updated_at')
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
 
   @JsonKey(name: 'last_accessed')
   final DateTime? lastAccessed;
@@ -54,12 +54,12 @@ class Environment extends Equatable {
     required this.templateId,
     required this.status,
     required this.resourceLimits,
-    required this.environmentVariables,
+    this.environmentVariables,
     this.externalUrl,
     this.webPort,
     this.sshPort,
     required this.createdAt,
-    required this.updatedAt,
+    this.updatedAt,
     this.lastAccessed,
     this.cpuUsage,
     this.memoryUsage,

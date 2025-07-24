@@ -9,17 +9,21 @@ part of 'environment.dart';
 Environment _$EnvironmentFromJson(Map<String, dynamic> json) => Environment(
       id: json['id'] as String,
       name: json['name'] as String,
-      templateId: json['template_id'] as String,
+      templateId: json['template'] as String,
       status: $enumDecode(_$EnvironmentStatusEnumMap, json['status']),
-      resourceLimits: ResourceLimits.fromJson(
-          json['resource_limits'] as Map<String, dynamic>),
+      resourceLimits:
+          ResourceLimits.fromJson(json['resources'] as Map<String, dynamic>),
       environmentVariables:
-          Map<String, String>.from(json['environment_variables'] as Map),
+          (json['environment_variables'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
       externalUrl: json['external_url'] as String?,
       webPort: (json['web_port'] as num?)?.toInt(),
       sshPort: (json['ssh_port'] as num?)?.toInt(),
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      updatedAt: json['updated_at'] == null
+          ? null
+          : DateTime.parse(json['updated_at'] as String),
       lastAccessed: json['last_accessed'] == null
           ? null
           : DateTime.parse(json['last_accessed'] as String),
@@ -32,15 +36,15 @@ Map<String, dynamic> _$EnvironmentToJson(Environment instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
-      'template_id': instance.templateId,
+      'template': instance.templateId,
       'status': _$EnvironmentStatusEnumMap[instance.status]!,
-      'resource_limits': instance.resourceLimits.toJson(),
+      'resources': instance.resourceLimits.toJson(),
       'environment_variables': instance.environmentVariables,
       'external_url': instance.externalUrl,
       'web_port': instance.webPort,
       'ssh_port': instance.sshPort,
       'created_at': instance.createdAt.toIso8601String(),
-      'updated_at': instance.updatedAt.toIso8601String(),
+      'updated_at': instance.updatedAt?.toIso8601String(),
       'last_accessed': instance.lastAccessed?.toIso8601String(),
       'cpu_usage': instance.cpuUsage,
       'memory_usage': instance.memoryUsage,

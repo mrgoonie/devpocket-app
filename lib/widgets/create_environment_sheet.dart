@@ -227,7 +227,7 @@ class _CreateEnvironmentSheetState extends State<CreateEnvironmentSheet> {
     if (apiTemplates.isNotEmpty) {
       return apiTemplates
           .map((template) => {
-                'id': template.id,
+                'id': template.name,
                 'name': template.displayName.isNotEmpty
                     ? template.displayName
                     : template.name,
