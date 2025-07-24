@@ -8,16 +8,16 @@ part 'auth_response.g.dart';
 class AuthResponse extends Equatable {
   @JsonKey(name: 'access_token')
   final String accessToken;
-  
+
   @JsonKey(name: 'refresh_token')
   final String refreshToken;
-  
+
   @JsonKey(name: 'token_type')
   final String tokenType;
-  
+
   @JsonKey(name: 'expires_in')
   final int expiresIn;
-  
+
   final User user;
 
   const AuthResponse({
@@ -28,16 +28,16 @@ class AuthResponse extends Equatable {
     required this.user,
   });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) => 
+  factory AuthResponse.fromJson(Map<String, dynamic> json) =>
       _$AuthResponseFromJson(json);
   Map<String, dynamic> toJson() => _$AuthResponseToJson(this);
 
   @override
   List<Object?> get props => [
-    accessToken,
-    refreshToken,
-    tokenType,
-    expiresIn,
-    user,
-  ];
+        accessToken,
+        refreshToken,
+        tokenType,
+        expiresIn,
+        user,
+      ];
 }

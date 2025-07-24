@@ -8,7 +8,7 @@ class ResourceLimits extends Equatable {
   final String? cpu;
   final String? memory;
   final String? storage;
-  
+
   @JsonKey(name: 'max_instances')
   final int? maxInstances;
 
@@ -19,7 +19,7 @@ class ResourceLimits extends Equatable {
     this.maxInstances,
   });
 
-  factory ResourceLimits.fromJson(Map<String, dynamic> json) => 
+  factory ResourceLimits.fromJson(Map<String, dynamic> json) =>
       _$ResourceLimitsFromJson(json);
   Map<String, dynamic> toJson() => _$ResourceLimitsToJson(this);
 
@@ -39,9 +39,9 @@ class ResourceLimits extends Equatable {
 
   @override
   List<Object?> get props => [
-    cpu,
-    memory,
-    storage,
-    maxInstances,
-  ];
+        cpu,
+        memory,
+        storage,
+        maxInstances,
+      ];
 }

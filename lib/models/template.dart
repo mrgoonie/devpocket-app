@@ -8,44 +8,44 @@ part 'template.g.dart';
 class Template extends Equatable {
   final String id;
   final String name;
-  
+
   @JsonKey(name: 'display_name')
   final String displayName;
-  
+
   final String description;
   final TemplateCategory category;
   final List<String> tags;
-  
+
   @JsonKey(name: 'docker_image')
   final String dockerImage;
-  
+
   @JsonKey(name: 'default_port')
   final int? defaultPort;
-  
+
   @JsonKey(name: 'default_resources')
   final Map<String, String> defaultResources;
-  
+
   @JsonKey(name: 'environment_variables')
   final Map<String, String> environmentVariables;
-  
+
   @JsonKey(name: 'startup_commands')
   final List<String> startupCommands;
-  
+
   @JsonKey(name: 'documentation_url')
   final String? documentationUrl;
-  
+
   @JsonKey(name: 'icon_url')
   final String? iconUrl;
-  
+
   final TemplateStatus status;
   final String version;
-  
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  
+
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
-  
+
   @JsonKey(name: 'usage_count')
   final int usageCount;
 
@@ -77,23 +77,23 @@ class Template extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    name,
-    displayName,
-    description,
-    category,
-    tags,
-    dockerImage,
-    defaultPort,
-    defaultResources,
-    environmentVariables,
-    startupCommands,
-    documentationUrl,
-    iconUrl,
-    status,
-    version,
-    createdAt,
-    updatedAt,
-    usageCount,
-  ];
+        id,
+        name,
+        displayName,
+        description,
+        category,
+        tags,
+        dockerImage,
+        defaultPort,
+        defaultResources,
+        environmentVariables,
+        startupCommands,
+        documentationUrl,
+        iconUrl,
+        status,
+        version,
+        createdAt,
+        updatedAt,
+        usageCount,
+      ];
 }

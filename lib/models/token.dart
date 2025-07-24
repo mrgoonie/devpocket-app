@@ -7,13 +7,13 @@ part 'token.g.dart';
 class Token extends Equatable {
   @JsonKey(name: 'access_token')
   final String accessToken;
-  
+
   @JsonKey(name: 'refresh_token')
   final String refreshToken;
-  
+
   @JsonKey(name: 'token_type')
   final String tokenType;
-  
+
   @JsonKey(name: 'expires_in')
   final int expiresIn;
 
@@ -24,15 +24,14 @@ class Token extends Equatable {
     required this.expiresIn,
   });
 
-  factory Token.fromJson(Map<String, dynamic> json) => 
-      _$TokenFromJson(json);
+  factory Token.fromJson(Map<String, dynamic> json) => _$TokenFromJson(json);
   Map<String, dynamic> toJson() => _$TokenToJson(this);
 
   @override
   List<Object?> get props => [
-    accessToken,
-    refreshToken,
-    tokenType,
-    expiresIn,
-  ];
+        accessToken,
+        refreshToken,
+        tokenType,
+        expiresIn,
+      ];
 }

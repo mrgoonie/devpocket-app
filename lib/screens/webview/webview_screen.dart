@@ -20,7 +20,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   String? _currentUrl;
   bool _showDevPanel = false;
   String _consoleLog = '';
-  
+
   @override
   bool get wantKeepAlive => true;
 
@@ -71,7 +71,7 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   void _injectConsoleCapture() {
     if (_webViewController == null) return;
-    
+
     // Inject JavaScript to capture console logs
     _webViewController!.runJavaScript('''
       (function() {
@@ -132,22 +132,21 @@ class _WebViewScreenState extends State<WebViewScreen>
     ''');
   }
 
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Consumer<EnvironmentProvider>(
       builder: (context, environmentProvider, child) {
         final currentEnvironment = environmentProvider.currentEnvironment;
-        
+
         return Scaffold(
           backgroundColor: AppTheme.darkBackground,
           body: Column(
             children: [
               // WebView Header
               _buildWebViewHeader(currentEnvironment),
-              
+
               // WebView Content
               Expanded(
                 child: currentEnvironment == null
@@ -156,7 +155,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                         ? _buildEnvironmentNotRunningState(currentEnvironment)
                         : _buildWebViewContent(),
               ),
-              
+
               // Developer Panel
               if (_showDevPanel) _buildDeveloperPanel(),
             ],
@@ -193,36 +192,37 @@ class _WebViewScreenState extends State<WebViewScreen>
                   size: 20,
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // URL display
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppTheme.darkCard,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppTheme.darkBorder, width: 1),
                   ),
                   child: Text(
-                    _currentUrl ?? (environment?.externalUrl ?? 'No URL available'),
+                    _currentUrl ??
+                        (environment?.externalUrl ?? 'No URL available'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.secondaryText,
-                      fontFamily: 'JetBrainsMono',
-                    ),
+                          color: AppTheme.secondaryText,
+                          fontFamily: 'JetBrainsMono',
+                        ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Actions
               _buildWebViewActions(environment),
             ],
           ),
-          
           if (_isLoading) ...[
             const SizedBox(height: 12),
             const LinearProgressIndicator(
@@ -249,7 +249,7 @@ class _WebViewScreenState extends State<WebViewScreen>
           ),
           tooltip: 'Refresh',
         ),
-        
+
         // Developer panel toggle
         IconButton(
           onPressed: () {
@@ -264,7 +264,7 @@ class _WebViewScreenState extends State<WebViewScreen>
           ),
           tooltip: 'Developer Panel',
         ),
-        
+
         // External browser
         IconButton(
           onPressed: _currentUrl != null
@@ -293,24 +293,20 @@ class _WebViewScreenState extends State<WebViewScreen>
               size: 64,
               color: AppTheme.mutedText,
             ),
-            
             const SizedBox(height: 24),
-            
             Text(
               'No Environment Selected',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.primaryText,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.primaryText,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-            
             const SizedBox(height: 12),
-            
             Text(
               'Select an environment to preview your application',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.secondaryText,
-              ),
+                    color: AppTheme.secondaryText,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -331,24 +327,20 @@ class _WebViewScreenState extends State<WebViewScreen>
               size: 64,
               color: AppTheme.errorColor,
             ),
-            
             const SizedBox(height: 24),
-            
             Text(
               'Environment Not Running',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.errorColor,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.errorColor,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-            
             const SizedBox(height: 12),
-            
             Text(
               'Start your environment to preview your application',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.secondaryText,
-              ),
+                    color: AppTheme.secondaryText,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -414,7 +406,7 @@ class _WebViewScreenState extends State<WebViewScreen>
               ],
             ),
           ),
-          
+
           // Console output
           Expanded(
             child: Container(
@@ -422,7 +414,7 @@ class _WebViewScreenState extends State<WebViewScreen>
               padding: const EdgeInsets.all(12),
               child: SingleChildScrollView(
                 child: Text(
-                  _consoleLog.isEmpty 
+                  _consoleLog.isEmpty
                       ? 'Console output will appear here...'
                       : _consoleLog,
                   style: const TextStyle(

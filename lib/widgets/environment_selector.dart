@@ -34,10 +34,10 @@ class EnvironmentSelector extends StatelessWidget {
           if (index == environments.length) {
             return _buildAddNewButton();
           }
-          
+
           final environment = environments[index];
           final isSelected = currentEnvironment?.id == environment.id;
-          
+
           return _buildEnvironmentChip(
             environment: environment,
             isSelected: isSelected,
@@ -97,8 +97,6 @@ class EnvironmentSelector extends StatelessWidget {
       case EnvironmentStatus.error:
         statusColor = AppTheme.errorColor;
         break;
-      default:
-        statusColor = AppTheme.mutedText;
     }
 
     return Container(
@@ -109,23 +107,23 @@ class EnvironmentSelector extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? AppTheme.neonGreen.withValues(alpha: 0.1) 
+            color: isSelected
+                ? AppTheme.neonGreen.withValues(alpha: 0.1)
                 : AppTheme.darkCard,
             borderRadius: BorderRadius.circular(25),
             border: Border.all(
-              color: isSelected 
-                  ? AppTheme.neonGreen 
-                  : AppTheme.darkBorder,
+              color: isSelected ? AppTheme.neonGreen : AppTheme.darkBorder,
               width: 2,
             ),
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: AppTheme.neonGreen.withValues(alpha: 0.3),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
-              ),
-            ] : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.neonGreen.withValues(alpha: 0.3),
+                      offset: const Offset(0, 2),
+                      blurRadius: 4,
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -146,23 +144,19 @@ class EnvironmentSelector extends StatelessWidget {
                 duration: 1.5.seconds,
                 color: statusColor.withValues(alpha: 0.5),
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Environment name
               Text(
                 environment.name,
                 style: TextStyle(
-                  color: isSelected 
-                      ? AppTheme.neonGreen 
-                      : AppTheme.primaryText,
-                  fontWeight: isSelected 
-                      ? FontWeight.bold 
-                      : FontWeight.w500,
+                  color: isSelected ? AppTheme.neonGreen : AppTheme.primaryText,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   fontSize: 12,
                 ),
               ),
-              
+
               // Template badge
               if (environment.templateId.isNotEmpty) ...[
                 const SizedBox(width: 8),
@@ -227,9 +221,9 @@ class EnvironmentSelector extends StatelessWidget {
         ),
       ),
     ).animate().scale(
-      duration: 200.ms,
-      curve: Curves.elasticOut,
-    );
+          duration: 200.ms,
+          curve: Curves.elasticOut,
+        );
   }
 
   Color _getTemplateColor(String template) {

@@ -80,12 +80,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 60),
-                    
+
                     // Logo and Title
-                    _buildHeader().animate().fadeIn(duration: 600.ms).slideY(begin: -0.3),
-                    
+                    _buildHeader()
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .slideY(begin: -0.3),
+
                     const SizedBox(height: 60),
-                    
+
                     // Email Field
                     BrutalistTextField(
                       controller: _emailController,
@@ -98,10 +101,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
-                    ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideX(begin: -0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 200.ms, duration: 600.ms)
+                        .slideX(begin: -0.3),
+
                     const SizedBox(height: 20),
-                    
+
                     // Password Field
                     BrutalistTextField(
                       controller: _passwordController,
@@ -111,7 +117,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onFieldSubmitted: (_) => _handleLogin(),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: AppTheme.secondaryText,
                         ),
                         onPressed: () {
@@ -129,27 +137,36 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
-                    ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideX(begin: 0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 400.ms, duration: 600.ms)
+                        .slideX(begin: 0.3),
+
                     const SizedBox(height: 32),
-                    
+
                     // Login Button
                     BrutalistButton(
                       onPressed: authProvider.isLoading ? null : _handleLogin,
                       isLoading: authProvider.isLoading,
                       child: const Text('SIGN IN'),
-                    ).animate().fadeIn(delay: 600.ms, duration: 600.ms).scale(begin: const Offset(0.8, 0.8)),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 600.ms, duration: 600.ms)
+                        .scale(begin: const Offset(0.8, 0.8)),
+
                     const SizedBox(height: 20),
-                    
+
                     // Or Divider
-                    _buildOrDivider().animate().fadeIn(delay: 800.ms, duration: 600.ms),
-                    
+                    _buildOrDivider()
+                        .animate()
+                        .fadeIn(delay: 800.ms, duration: 600.ms),
+
                     const SizedBox(height: 20),
-                    
+
                     // Google Sign In Button
                     BrutalistButton(
-                      onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
+                      onPressed:
+                          authProvider.isLoading ? null : _handleGoogleSignIn,
                       backgroundColor: AppTheme.primaryWhite,
                       foregroundColor: AppTheme.primaryBlack,
                       isLoading: authProvider.isLoading,
@@ -165,17 +182,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text('CONTINUE WITH GOOGLE'),
                         ],
                       ),
-                    ).animate().fadeIn(delay: 1000.ms, duration: 600.ms).scale(begin: const Offset(0.8, 0.8)),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 1000.ms, duration: 600.ms)
+                        .scale(begin: const Offset(0.8, 0.8)),
+
                     const SizedBox(height: 32),
-                    
+
                     // Sign Up Link
-                    _buildSignUpLink().animate().fadeIn(delay: 1200.ms, duration: 600.ms),
-                    
+                    _buildSignUpLink()
+                        .animate()
+                        .fadeIn(delay: 1200.ms, duration: 600.ms),
+
                     const SizedBox(height: 20),
-                    
+
                     // Forgot Password Link
-                    _buildForgotPasswordLink().animate().fadeIn(delay: 1400.ms, duration: 600.ms),
+                    _buildForgotPasswordLink()
+                        .animate()
+                        .fadeIn(delay: 1400.ms, duration: 600.ms),
                   ],
                 ),
               ),
@@ -213,17 +237,17 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'DevPocket',
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
-            color: AppTheme.neonGreen,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1,
-          ),
+                color: AppTheme.neonGreen,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
           'Code anywhere, anytime',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTheme.secondaryText,
-          ),
+                color: AppTheme.secondaryText,
+              ),
         ),
       ],
     );
@@ -238,9 +262,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Text(
             'OR',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedText,
-              fontWeight: FontWeight.bold,
-            ),
+                  color: AppTheme.mutedText,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
         const Expanded(child: Divider(color: AppTheme.darkBorder)),
@@ -266,10 +290,10 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Text(
             'Sign Up',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.neonPink,
-              fontWeight: FontWeight.bold,
-              decoration: TextDecoration.underline,
-            ),
+                  color: AppTheme.neonPink,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                ),
           ),
         ),
       ],
@@ -291,9 +315,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Text(
           'Forgot Password?',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppTheme.neonBlue,
-            decoration: TextDecoration.underline,
-          ),
+                color: AppTheme.neonBlue,
+                decoration: TextDecoration.underline,
+              ),
         ),
       ),
     );

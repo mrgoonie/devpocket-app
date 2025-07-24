@@ -13,7 +13,7 @@ class StorageService {
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
   );
-  
+
   static final _logger = Logger();
 
   static Future<void> saveTokens({
@@ -47,7 +47,8 @@ class StorageService {
       final token = await _storage.read(key: AppConstants.refreshTokenKey);
       return token;
     } catch (e, stackTrace) {
-      _logger.e('Failed to get refresh token', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to get refresh token',
+          error: e, stackTrace: stackTrace);
       return null;
     }
   }
@@ -101,7 +102,8 @@ class StorageService {
     try {
       await _storage.write(key: key, value: value);
     } catch (e, stackTrace) {
-      _logger.e('Failed to save value for key: $key', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to save value for key: $key',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -110,7 +112,8 @@ class StorageService {
     try {
       return await _storage.read(key: key);
     } catch (e, stackTrace) {
-      _logger.e('Failed to get value for key: $key', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to get value for key: $key',
+          error: e, stackTrace: stackTrace);
       return null;
     }
   }
@@ -119,7 +122,8 @@ class StorageService {
     try {
       await _storage.delete(key: key);
     } catch (e, stackTrace) {
-      _logger.e('Failed to delete value for key: $key', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to delete value for key: $key',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }

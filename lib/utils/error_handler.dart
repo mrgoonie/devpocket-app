@@ -107,7 +107,7 @@ class ErrorHandler {
     }
 
     // Storage errors
-    if (error.toString().contains('storage') || 
+    if (error.toString().contains('storage') ||
         error.toString().contains('Storage')) {
       return AppError(
         message: 'Failed to access device storage. Please check permissions.',
@@ -119,8 +119,8 @@ class ErrorHandler {
 
     // Generic error handling
     return AppError(
-      message: error.toString().isNotEmpty 
-          ? error.toString() 
+      message: error.toString().isNotEmpty
+          ? error.toString()
           : 'An unexpected error occurred',
       type: ErrorType.unknown,
       originalError: error,
@@ -130,7 +130,7 @@ class ErrorHandler {
 
   static AppError _handleDioError(DioException error) {
     final response = error.response;
-    
+
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -174,11 +174,11 @@ class ErrorHandler {
   static AppError _handleHttpError(Response response) {
     final statusCode = response.statusCode ?? 0;
     final data = response.data;
-    
+
     // Try to parse error response
     String message;
     String? code;
-    
+
     if (data is Map<String, dynamic>) {
       try {
         final errorResponse = ErrorResponse.fromJson(data);
@@ -265,10 +265,9 @@ class ErrorHandler {
     StackTrace? stackTrace,
     Map<String, dynamic>? context,
   }) {
-    final contextString = context != null 
-        ? '\nContext: ${context.toString()}' 
-        : '';
-    
+    final contextString =
+        context != null ? '\nContext: ${context.toString()}' : '';
+
     _logger.e(
       '$message$contextString',
       error: error,
@@ -281,10 +280,9 @@ class ErrorHandler {
     dynamic error,
     Map<String, dynamic>? context,
   }) {
-    final contextString = context != null 
-        ? '\nContext: ${context.toString()}' 
-        : '';
-    
+    final contextString =
+        context != null ? '\nContext: ${context.toString()}' : '';
+
     _logger.w('$message$contextString', error: error);
   }
 
@@ -292,10 +290,9 @@ class ErrorHandler {
     String message, {
     Map<String, dynamic>? context,
   }) {
-    final contextString = context != null 
-        ? '\nContext: ${context.toString()}' 
-        : '';
-    
+    final contextString =
+        context != null ? '\nContext: ${context.toString()}' : '';
+
     _logger.i('$message$contextString');
   }
 
@@ -304,10 +301,9 @@ class ErrorHandler {
     Map<String, dynamic>? context,
   }) {
     if (kDebugMode) {
-      final contextString = context != null 
-          ? '\nContext: ${context.toString()}' 
-          : '';
-      
+      final contextString =
+          context != null ? '\nContext: ${context.toString()}' : '';
+
       _logger.d('$message$contextString');
     }
   }
@@ -319,7 +315,7 @@ class ErrorHandler {
       case ErrorType.authentication:
         return 'Please sign in again to continue.';
       case ErrorType.authorization:
-        return 'You don\'t have permission to perform this action.';
+        return error.message.isNotEmpty ? error.message : 'You don\'t have permission to perform this action.';
       case ErrorType.validation:
         return 'Please check your input and try again.';
       case ErrorType.server:

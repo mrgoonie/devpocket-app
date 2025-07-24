@@ -87,7 +87,8 @@ class _BrutalistButtonState extends State<BrutalistButton>
     final borderColor = widget.borderColor ?? AppTheme.primaryBlack;
     final borderWidth = widget.borderWidth ?? 3.0;
     final shadowOffset = widget.shadowOffset ?? 4.0;
-    final padding = widget.padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 16);
+    final padding = widget.padding ??
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 16);
     final borderRadius = widget.borderRadius ?? 8.0;
 
     return AnimatedBuilder(
@@ -139,17 +140,18 @@ class _BrutalistButtonState extends State<BrutalistButton>
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(foregroundColor),
                         ),
                       ),
                       const SizedBox(width: 12),
                     ],
                     DefaultTextStyle(
                       style: Theme.of(context).textTheme.labelLarge!.copyWith(
-                        color: foregroundColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                            color: foregroundColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                       child: widget.child,
                     ),
                   ],

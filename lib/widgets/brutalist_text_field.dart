@@ -83,12 +83,13 @@ class _BrutalistTextFieldState extends State<BrutalistTextField>
           child: Text(
             widget.label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: _isFocused ? AppTheme.neonGreen : AppTheme.secondaryText,
-              fontWeight: FontWeight.bold,
-            ),
+                  color:
+                      _isFocused ? AppTheme.neonGreen : AppTheme.secondaryText,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
-        
+
         // Text Field Container
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -132,15 +133,17 @@ class _BrutalistTextFieldState extends State<BrutalistTextField>
             maxLines: widget.maxLines,
             minLines: widget.minLines,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: widget.enabled ? AppTheme.primaryText : AppTheme.mutedText,
-              fontFamily: 'Inter',
-            ),
+                  color: widget.enabled
+                      ? AppTheme.primaryText
+                      : AppTheme.mutedText,
+                  fontFamily: 'Inter',
+                ),
             decoration: InputDecoration(
               hintText: widget.hintText ?? widget.label,
               hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.mutedText,
-                fontFamily: 'Inter',
-              ),
+                    color: AppTheme.mutedText,
+                    fontFamily: 'Inter',
+                  ),
               prefixIcon: widget.prefixIcon,
               suffixIcon: widget.suffixIcon,
               border: InputBorder.none,
@@ -165,7 +168,7 @@ class _BrutalistTextFieldState extends State<BrutalistTextField>
             onFieldSubmitted: widget.onFieldSubmitted,
           ),
         ),
-        
+
         // Error Text
         if (_errorText != null)
           Padding(
@@ -173,9 +176,9 @@ class _BrutalistTextFieldState extends State<BrutalistTextField>
             child: Text(
               _errorText!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.errorColor,
-                fontWeight: FontWeight.w500,
-              ),
+                    color: AppTheme.errorColor,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
       ],

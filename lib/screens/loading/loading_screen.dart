@@ -23,7 +23,7 @@ class _LoadingScreenState extends State<LoadingScreen>
   late AnimationController _containerController;
   late AnimationController _pulseController;
   late AnimationController _codeController;
-  
+
   late Animation<double> _containerRotation;
   late Animation<double> _pulseScale;
   late Animation<Offset> _codeSlide;
@@ -53,13 +53,13 @@ class _LoadingScreenState extends State<LoadingScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Container animation (spinning Docker container)
     _containerController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     );
-    
+
     _containerRotation = Tween<double>(
       begin: 0,
       end: 1,
@@ -67,13 +67,13 @@ class _LoadingScreenState extends State<LoadingScreen>
       parent: _containerController,
       curve: Curves.linear,
     ));
-    
+
     // Pulse animation
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
+
     _pulseScale = Tween<double>(
       begin: 1.0,
       end: 1.1,
@@ -81,13 +81,13 @@ class _LoadingScreenState extends State<LoadingScreen>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Code animation
     _codeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _codeSlide = Tween<Offset>(
       begin: const Offset(1.0, 0.0),
       end: Offset.zero,
@@ -95,11 +95,11 @@ class _LoadingScreenState extends State<LoadingScreen>
       parent: _codeController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     // Start animations
     _containerController.repeat();
     _pulseController.repeat(reverse: true);
-    
+
     // Cycle through messages and code
     _startMessageCycle();
     _startCodeCycle();
@@ -109,7 +109,8 @@ class _LoadingScreenState extends State<LoadingScreen>
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
-          _currentMessageIndex = (_currentMessageIndex + 1) % _loadingMessages.length;
+          _currentMessageIndex =
+              (_currentMessageIndex + 1) % _loadingMessages.length;
         });
         _startMessageCycle();
       }
@@ -154,10 +155,11 @@ class _LoadingScreenState extends State<LoadingScreen>
                   children: [
                     Text(
                       'DevPocket',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppTheme.neonGreen,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: AppTheme.neonGreen,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     TextButton(
                       onPressed: widget.onCancel,
@@ -169,55 +171,58 @@ class _LoadingScreenState extends State<LoadingScreen>
               ] else ...[
                 const SizedBox(height: 60),
               ],
-              
+
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Main container animation
                     _buildAnimatedContainer(),
-                    
+
                     const SizedBox(height: 60),
-                    
+
                     // Environment name
                     if (widget.environmentName != null) ...[
                       Text(
                         'Setting up ${widget.environmentName}',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppTheme.primaryText,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppTheme.primaryText,
+                                  fontWeight: FontWeight.bold,
+                                ),
                         textAlign: TextAlign.center,
                       ).animate().fadeIn(delay: 500.ms),
                       const SizedBox(height: 20),
                     ],
-                    
+
                     // Loading message
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 500),
                       child: Text(
-                        widget.message ?? _loadingMessages[_currentMessageIndex],
+                        widget.message ??
+                            _loadingMessages[_currentMessageIndex],
                         key: ValueKey(_currentMessageIndex),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppTheme.secondaryText,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: AppTheme.secondaryText,
+                                ),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 40),
-                    
+
                     // Progress indicator
                     _buildProgressIndicator(),
-                    
+
                     const SizedBox(height: 60),
-                    
+
                     // Code snippet area
                     _buildCodeArea(),
                   ],
                 ),
               ),
-              
+
               // Tips at bottom
               _buildTips().animate().fadeIn(delay: 1000.ms).slideY(begin: 0.3),
             ],
@@ -292,8 +297,8 @@ class _LoadingScreenState extends State<LoadingScreen>
         Text(
           'This usually takes 30-60 seconds',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppTheme.mutedText,
-          ),
+                color: AppTheme.mutedText,
+              ),
         ),
       ],
     );
@@ -353,9 +358,9 @@ class _LoadingScreenState extends State<LoadingScreen>
               Text(
                 'Dockerfile',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedText,
-                  fontFamily: 'JetBrainsMono',
-                ),
+                      color: AppTheme.mutedText,
+                      fontFamily: 'JetBrainsMono',
+                    ),
               ),
             ],
           ),
@@ -365,10 +370,10 @@ class _LoadingScreenState extends State<LoadingScreen>
             child: Text(
               _codeSnippets[_currentCodeIndex],
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.neonGreen,
-                fontFamily: 'JetBrainsMono',
-                fontWeight: FontWeight.w500,
-              ),
+                    color: AppTheme.neonGreen,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
         ],
@@ -399,8 +404,8 @@ class _LoadingScreenState extends State<LoadingScreen>
             child: Text(
               'Tip: Your environment will be ready in moments. You can start coding as soon as it loads!',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.secondaryText,
-              ),
+                    color: AppTheme.secondaryText,
+                  ),
             ),
           ),
         ],

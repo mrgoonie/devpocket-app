@@ -8,28 +8,28 @@ class User extends Equatable {
   final String id;
   final String username;
   final String email;
-  
+
   @JsonKey(name: 'full_name')
   final String? fullName;
-  
+
   @JsonKey(name: 'is_active')
   final bool isActive;
-  
+
   @JsonKey(name: 'is_verified')
   final bool isVerified;
-  
+
   @JsonKey(name: 'subscription_plan')
   final String subscriptionPlan;
-  
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  
+
   @JsonKey(name: 'last_login')
   final DateTime? lastLogin;
-  
+
   @JsonKey(name: 'preferred_region')
   final String? preferredRegion;
-  
+
   @JsonKey(name: 'avatar_url')
   final String? avatarUrl;
 
@@ -80,16 +80,16 @@ class User extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    username,
-    email,
-    fullName,
-    isActive,
-    isVerified,
-    subscriptionPlan,
-    createdAt,
-    lastLogin,
-    preferredRegion,
-    avatarUrl,
-  ];
+        id,
+        username,
+        email,
+        fullName,
+        isActive,
+        isVerified,
+        subscriptionPlan,
+        createdAt,
+        lastLogin,
+        preferredRegion,
+        avatarUrl,
+      ];
 }

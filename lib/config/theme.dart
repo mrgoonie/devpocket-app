@@ -9,29 +9,29 @@ class AppTheme {
   static const Color neonBlue = Color(0xFF0070F3);
   static const Color neonYellow = Color(0xFFFFD700);
   static const Color neonPurple = Color(0xFF9D4EDD);
-  
+
   // Dark Background Colors
   static const Color darkBackground = Color(0xFF0A0A0A);
   static const Color darkSurface = Color(0xFF1A1A1A);
   static const Color darkCard = Color(0xFF2A2A2A);
   static const Color darkBorder = Color(0xFF3A3A3A);
-  
+
   // Text Colors
   static const Color primaryText = Color(0xFFFFFFFF);
   static const Color secondaryText = Color(0xFFB0B0B0);
   static const Color mutedText = Color(0xFF808080);
-  
+
   // Status Colors
   static const Color successColor = Color(0xFF00FF41);
   static const Color errorColor = Color(0xFFFF006B);
   static const Color warningColor = Color(0xFFFFD700);
   static const Color infoColor = Color(0xFF0070F3);
-  
+
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      
+
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         brightness: Brightness.dark,
@@ -49,7 +49,7 @@ class AppTheme {
         surfaceContainerHighest: darkCard,
         onSurfaceVariant: secondaryText,
       ),
-      
+
       // App Bar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: darkBackground,
@@ -63,7 +63,7 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         color: darkCard,
@@ -77,7 +77,7 @@ class AppTheme {
         ),
         margin: const EdgeInsets.all(8),
       ),
-      
+
       // Elevated Button Theme (Neobrutalism style)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -103,7 +103,7 @@ class AppTheme {
           shadowColor: WidgetStateProperty.all(primaryBlack),
         ),
       ),
-      
+
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -121,7 +121,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
@@ -134,7 +134,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -163,9 +163,10 @@ class AppTheme {
           color: mutedText,
           fontFamily: 'Inter',
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      
+
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: darkSurface,
@@ -179,7 +180,7 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Tab Bar Theme
       tabBarTheme: const TabBarThemeData(
         labelColor: neonGreen,
@@ -193,7 +194,7 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Text Theme
       textTheme: const TextTheme(
         displayLarge: TextStyle(
@@ -284,22 +285,22 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Scaffold Background
       scaffoldBackgroundColor: darkBackground,
-      
+
       // Divider Theme
       dividerTheme: const DividerThemeData(
         color: darkBorder,
         thickness: 1,
       ),
-      
+
       // Icon Theme
       iconTheme: const IconThemeData(
         color: primaryText,
         size: 24,
       ),
-      
+
       // Floating Action Button Theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: neonPink,
@@ -312,7 +313,7 @@ class AppTheme {
       ),
     );
   }
-  
+
   // Terminal Theme
   static const terminalTheme = {
     'background': Color(0xFF0A0A0A),

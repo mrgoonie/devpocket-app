@@ -16,18 +16,17 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen>
     with AutomaticKeepAliveClientMixin {
-  
   @override
   bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Consumer2<AuthProvider, EnvironmentProvider>(
       builder: (context, authProvider, environmentProvider, child) {
         final user = authProvider.user;
-        
+
         return Scaffold(
           backgroundColor: AppTheme.darkBackground,
           body: SafeArea(
@@ -38,19 +37,23 @@ class _SettingsScreenState extends State<SettingsScreen>
                 children: [
                   // Header
                   _buildHeader(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // User Profile Section
-                  _buildUserProfileSection(user).animate().fadeIn(delay: 200.ms),
-                  
+                  _buildUserProfileSection(user)
+                      .animate()
+                      .fadeIn(delay: 200.ms),
+
                   const SizedBox(height: 24),
-                  
+
                   // Environment Stats Section
-                  _buildEnvironmentStatsSection(environmentProvider).animate().fadeIn(delay: 400.ms),
-                  
+                  _buildEnvironmentStatsSection(environmentProvider)
+                      .animate()
+                      .fadeIn(delay: 400.ms),
+
                   const SizedBox(height: 24),
-                  
+
                   // Account Settings
                   _buildSettingsSection(
                     'Account Settings',
@@ -75,9 +78,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ],
                   ).animate().fadeIn(delay: 600.ms),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Subscription & Billing
                   _buildSettingsSection(
                     'Subscription & Billing',
@@ -85,9 +88,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                       _buildSettingItem(
                         icon: Icons.workspace_premium,
                         title: 'Current Plan',
-                        subtitle: user?.subscriptionPlan.toUpperCase() ?? 'FREE',
-                        trailing: user?.subscriptionPlan != 'free' 
-                            ? const Icon(Icons.star, color: AppTheme.neonYellow, size: 20)
+                        subtitle:
+                            user?.subscriptionPlan.toUpperCase() ?? 'FREE',
+                        trailing: user?.subscriptionPlan != 'free'
+                            ? const Icon(Icons.star,
+                                color: AppTheme.neonYellow, size: 20)
                             : null,
                         onTap: () => _showSubscriptionDialog(user),
                       ),
@@ -105,9 +110,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ],
                   ).animate().fadeIn(delay: 800.ms),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // App Settings
                   _buildSettingsSection(
                     'App Settings',
@@ -126,9 +131,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ],
                   ).animate().fadeIn(delay: 1000.ms),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Support & Legal
                   _buildSettingsSection(
                     'Support & Legal',
@@ -159,12 +164,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ],
                   ).animate().fadeIn(delay: 1200.ms),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Sign Out Button
-                  _buildSignOutButton(authProvider).animate().fadeIn(delay: 1400.ms),
-                  
+                  _buildSignOutButton(authProvider)
+                      .animate()
+                      .fadeIn(delay: 1400.ms),
+
                   const SizedBox(height: 32),
                 ],
               ),
@@ -191,24 +198,22 @@ class _SettingsScreenState extends State<SettingsScreen>
             size: 24,
           ),
         ),
-        
         const SizedBox(width: 16),
-        
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Settings',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.neonPink,
-                fontWeight: FontWeight.w900,
-              ),
+                    color: AppTheme.neonPink,
+                    fontWeight: FontWeight.w900,
+                  ),
             ),
             Text(
               'Manage your account and preferences',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.secondaryText,
-              ),
+                    color: AppTheme.secondaryText,
+                  ),
             ),
           ],
         ),
@@ -253,9 +258,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
             ),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // User Info
           Expanded(
             child: Column(
@@ -264,20 +269,21 @@ class _SettingsScreenState extends State<SettingsScreen>
                 Text(
                   user?.fullName ?? user?.username ?? 'Unknown User',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.primaryText,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.primaryText,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   user?.email ?? 'No email',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.secondaryText,
-                  ),
+                        color: AppTheme.secondaryText,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: _getSubscriptionColor(user?.subscriptionPlan),
                     borderRadius: BorderRadius.circular(12),
@@ -299,11 +305,12 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildEnvironmentStatsSection(EnvironmentProvider environmentProvider) {
+  Widget _buildEnvironmentStatsSection(
+      EnvironmentProvider environmentProvider) {
     final totalEnvs = environmentProvider.environments.length;
     final runningEnvs = environmentProvider.runningEnvironments.length;
     final stoppedEnvs = environmentProvider.stoppedEnvironments.length;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -332,15 +339,13 @@ class _SettingsScreenState extends State<SettingsScreen>
               Text(
                 'Environment Overview',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.neonBlue,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: AppTheme.neonBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ],
           ),
-          
           const SizedBox(height: 16),
-          
           Row(
             children: [
               Expanded(
@@ -399,8 +404,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           Text(
             title,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.secondaryText,
-            ),
+                  color: AppTheme.secondaryText,
+                ),
           ),
         ],
       ),
@@ -414,13 +419,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTheme.secondaryText,
-            fontWeight: FontWeight.bold,
-          ),
+                color: AppTheme.secondaryText,
+                fontWeight: FontWeight.bold,
+              ),
         ),
-        
         const SizedBox(height: 12),
-        
         Container(
           decoration: BoxDecoration(
             color: AppTheme.darkCard,
@@ -432,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               final index = entry.key;
               final item = entry.value;
               final isLast = index == items.length - 1;
-              
+
               return Column(
                 children: [
                   item,
@@ -466,21 +469,22 @@ class _SettingsScreenState extends State<SettingsScreen>
       title: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: AppTheme.primaryText,
-          fontWeight: FontWeight.w600,
-        ),
+              color: AppTheme.primaryText,
+              fontWeight: FontWeight.w600,
+            ),
       ),
       subtitle: Text(
         subtitle,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppTheme.secondaryText,
-        ),
+              color: AppTheme.secondaryText,
+            ),
       ),
-      trailing: trailing ?? const Icon(
-        Icons.chevron_right,
-        color: AppTheme.mutedText,
-        size: 20,
-      ),
+      trailing: trailing ??
+          const Icon(
+            Icons.chevron_right,
+            color: AppTheme.mutedText,
+            size: 20,
+          ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
@@ -489,7 +493,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _buildSignOutButton(AuthProvider authProvider) {
     return Center(
       child: BrutalistButton(
-        onPressed: authProvider.isLoading ? null : () => _showSignOutDialog(authProvider),
+        onPressed: authProvider.isLoading
+            ? null
+            : () => _showSignOutDialog(authProvider),
         backgroundColor: AppTheme.errorColor,
         foregroundColor: AppTheme.primaryWhite,
         isLoading: authProvider.isLoading,
@@ -523,7 +529,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Profile', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Profile',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Profile management coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -531,7 +538,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -543,7 +551,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Change Password', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Change Password',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Password change coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -551,7 +560,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -563,7 +573,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Notifications', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Notifications',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Notification settings coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -571,7 +582,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -583,7 +595,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Subscription', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Subscription',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: Text(
           'Current plan: ${(user?.subscriptionPlan ?? 'free').toUpperCase()}\n\nSubscription management coming soon!',
           style: const TextStyle(color: AppTheme.secondaryText),
@@ -591,7 +604,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -603,7 +617,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Billing', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Billing',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Billing management coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -611,7 +626,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -623,7 +639,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Usage History', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Usage History',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Usage statistics coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -631,7 +648,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -643,7 +661,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Terminal Settings', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Terminal Settings',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Terminal customization coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -651,7 +670,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -663,7 +683,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Storage', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Storage',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Storage management coming soon!',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -671,7 +692,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -683,7 +705,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Support', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Support',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'For support, please contact:\nsupport@devpocket.io',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -691,7 +714,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -703,7 +727,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Privacy Policy', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Privacy Policy',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Privacy Policy will be available at:\nhttps://devpocket.io/privacy',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -711,7 +736,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -723,7 +749,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Terms of Service', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Terms of Service',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Terms of Service will be available at:\nhttps://devpocket.io/terms',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -731,7 +758,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -743,7 +771,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('About DevPocket', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('About DevPocket',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'DevPocket v1.0.0\n\nThe mobile-first cloud IDE.\nCode anywhere, anytime.\n\nBuilt with ❤️ in Vietnam',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -751,7 +780,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
+            child:
+                const Text('OK', style: TextStyle(color: AppTheme.neonGreen)),
           ),
         ],
       ),
@@ -763,7 +793,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.darkCard,
-        title: const Text('Sign Out', style: TextStyle(color: AppTheme.primaryText)),
+        title: const Text('Sign Out',
+            style: TextStyle(color: AppTheme.primaryText)),
         content: const Text(
           'Are you sure you want to sign out?',
           style: TextStyle(color: AppTheme.secondaryText),
@@ -771,14 +802,16 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.secondaryText)),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppTheme.secondaryText)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               authProvider.logout();
             },
-            child: const Text('Sign Out', style: TextStyle(color: AppTheme.errorColor)),
+            child: const Text('Sign Out',
+                style: TextStyle(color: AppTheme.errorColor)),
           ),
         ],
       ),

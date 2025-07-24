@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:devpocket/providers/auth_provider.dart';
 import 'package:devpocket/config/theme.dart';
 
-
 class EmailVerificationScreen extends StatefulWidget {
   final String email;
 
@@ -16,7 +15,8 @@ class EmailVerificationScreen extends StatefulWidget {
   });
 
   @override
-  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
@@ -114,7 +114,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     try {
       final authProvider = context.read<AuthProvider>();
       await authProvider.verifyEmail(code);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -151,7 +151,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     try {
       final authProvider = context.read<AuthProvider>();
       await authProvider.resendVerificationEmail();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -278,7 +278,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.neonGreen, width: 3),
+                borderSide:
+                    const BorderSide(color: AppTheme.neonGreen, width: 3),
               ),
             ),
             inputFormatters: [
@@ -288,10 +289,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             onChanged: (value) => _handleCodeChange(index, value),
           ),
         ).animate(delay: (500 + index * 50).ms).slideY(
-          begin: 0.2,
-          duration: 400.ms,
-          curve: Curves.easeOutBack,
-        );
+              begin: 0.2,
+              duration: 400.ms,
+              curve: Curves.easeOutBack,
+            );
       }),
     );
   }
@@ -300,9 +301,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     return TextButton(
       onPressed: _canResend ? _handleResendCode : null,
       child: Text(
-        _canResend
-            ? 'Resend Code'
-            : 'Resend in ${_resendTimer}s',
+        _canResend ? 'Resend Code' : 'Resend in ${_resendTimer}s',
         style: theme.textTheme.bodyLarge?.copyWith(
           color: _canResend ? AppTheme.neonGreen : Colors.white54,
           fontWeight: FontWeight.bold,
@@ -343,7 +342,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 ),
               ),
       ),
-    ).animate()
+    )
+        .animate()
         .fadeIn(delay: 700.ms)
         .slideY(begin: 0.2, duration: 400.ms, curve: Curves.easeOut);
   }

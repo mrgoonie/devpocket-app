@@ -64,6 +64,8 @@ class AuthInterceptor extends Interceptor {
       if (token != null && !_isTokenExpired(token)) {
         options.headers['Authorization'] = 'Bearer $token';
         _logger.d('Added auth token to request: ${options.path}');
+      } else {
+        _logger.w('No valid token available for request: ${options.path}');
       }
     } catch (e) {
       _logger.w('Failed to add auth token to request', error: e);
@@ -75,7 +77,7 @@ class AuthInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
       _logger.w('Received 401 error, attempting token refresh');
-      
+
       final refreshToken = await StorageService.getRefreshToken();
       if (refreshToken != null && !_isTokenExpired(refreshToken)) {
         try {
@@ -84,17 +86,17 @@ class AuthInterceptor extends Interceptor {
             '${AppConstants.apiBaseUrl}/api/v1/auth/refresh',
             data: {'refresh_token': refreshToken},
           );
-          
+
           final token = Token.fromJson(response.data);
           await StorageService.saveTokens(
             accessToken: token.accessToken,
             refreshToken: token.refreshToken,
           );
-          
+
           // Retry original request with new token
-          err.requestOptions.headers['Authorization'] = 
+          err.requestOptions.headers['Authorization'] =
               'Bearer ${token.accessToken}';
-          
+
           final cloneReq = await dio.request(
             err.requestOptions.path,
             options: Options(
@@ -104,7 +106,7 @@ class AuthInterceptor extends Interceptor {
             data: err.requestOptions.data,
             queryParameters: err.requestOptions.queryParameters,
           );
-          
+
           _logger.i('Successfully refreshed token and retried request');
           return handler.resolve(cloneReq);
         } catch (refreshError) {
@@ -134,12 +136,13 @@ class AuthManager {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     // iOS client ID from GoogleService-Info.plist
-    clientId: '331656256423-gfjk0ohtpjtnvad19c6mdeeisnuiqeg7.apps.googleusercontent.com',
+    clientId:
+        '331656256423-gfjk0ohtpjtnvad19c6mdeeisnuiqeg7.apps.googleusercontent.com',
   );
-  
+
   late final Dio _dio;
   late final AuthService _authService;
-  
+
   AuthManager() {
     _dio = Dio();
     _setupInterceptors();
@@ -151,12 +154,20 @@ class AuthManager {
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
-      logPrint: (obj) => _logger.d(obj.toString()),
+      logPrint: (obj) {
+        // Only log essential info, not full request/response details
+        if (obj.toString().contains('ERROR') ||
+            obj.toString().contains('FAIL')) {
+          _logger.e(obj.toString());
+        }
+      },
     ));
-    
+
     // Add timeout configuration
-    _dio.options.connectTimeout = const Duration(milliseconds: AppConstants.connectTimeoutMs);
-    _dio.options.receiveTimeout = const Duration(milliseconds: AppConstants.receiveTimeoutMs);
+    _dio.options.connectTimeout =
+        const Duration(milliseconds: AppConstants.connectTimeoutMs);
+    _dio.options.receiveTimeout =
+        const Duration(milliseconds: AppConstants.receiveTimeoutMs);
   }
 
   Future<AuthResponse> login(String usernameOrEmail, String password) async {
@@ -166,17 +177,17 @@ class AuthManager {
         'username_or_email': usernameOrEmail.trim(),
         'password': password,
       });
-      
+
       // Save tokens
       await StorageService.saveTokens(
         accessToken: tokenResponse.accessToken,
         refreshToken: tokenResponse.refreshToken,
       );
-      
+
       // Fetch user profile
       final user = await _authService.getProfile();
       await StorageService.saveUser(user);
-      
+
       // Create AuthResponse for compatibility
       final authResponse = AuthResponse(
         accessToken: tokenResponse.accessToken,
@@ -185,30 +196,34 @@ class AuthManager {
         expiresIn: tokenResponse.expiresIn,
         user: user,
       );
-      
+
       _logger.i('Login successful');
       return authResponse;
     } catch (e) {
       _logger.e('Login failed', error: e);
-      
+
       // Enhanced error handling for login
       if (e is DioException) {
         final statusCode = e.response?.statusCode;
         final errorMessage = _extractErrorMessage(e);
-        
+
         if (statusCode == 401) {
           if (errorMessage.toLowerCase().contains('incorrect')) {
-            throw Exception('Invalid credentials. Please check your username/email and password. If you just registered, please wait a moment and try again.');
+            throw Exception(
+                'Invalid credentials. Please check your username/email and password. If you just registered, please wait a moment and try again.');
           } else {
-            throw Exception('Authentication failed. Please verify your credentials and try again.');
+            throw Exception(
+                'Authentication failed. Please verify your credentials and try again.');
           }
         } else if (statusCode == 404) {
-          throw Exception('User not found. Please check your username/email or register for a new account.');
+          throw Exception(
+              'User not found. Please check your username/email or register for a new account.');
         } else if (statusCode == 429) {
-          throw Exception('Too many login attempts. Please wait a few minutes and try again.');
+          throw Exception(
+              'Too many login attempts. Please wait a few minutes and try again.');
         }
       }
-      
+
       throw await _handleErrorWithConnectivityCheck(e);
     }
   }
@@ -225,19 +240,20 @@ class AuthManager {
         'username': username.trim(),
         'email': email.trim(),
         'password': password,
-        if (fullName != null && fullName.isNotEmpty) 'full_name': fullName.trim(),
+        if (fullName != null && fullName.isNotEmpty)
+          'full_name': fullName.trim(),
       });
-      
+
       // Save tokens
       await StorageService.saveTokens(
         accessToken: tokenResponse.accessToken,
         refreshToken: tokenResponse.refreshToken,
       );
-      
+
       // Fetch user profile
       final user = await _authService.getProfile();
       await StorageService.saveUser(user);
-      
+
       // Create AuthResponse for compatibility
       final authResponse = AuthResponse(
         accessToken: tokenResponse.accessToken,
@@ -246,35 +262,39 @@ class AuthManager {
         expiresIn: tokenResponse.expiresIn,
         user: user,
       );
-      
+
       _logger.i('Registration successful');
       return authResponse;
     } catch (e) {
       _logger.e('Registration failed', error: e);
-      
+
       // Enhanced error handling for registration
       if (e is DioException) {
         final statusCode = e.response?.statusCode;
         final errorMessage = _extractErrorMessage(e);
-        
+
         if (statusCode == 500) {
           // Server error - could be user created but response failed
           if (errorMessage.toLowerCase().contains('could not create user') ||
               errorMessage.toLowerCase().contains('duplicate') ||
               errorMessage.toLowerCase().contains('already exists')) {
-            throw Exception('Registration may have succeeded but there was a server error. Please try logging in with your credentials, or try a different username/email if the account already exists.');
+            throw Exception(
+                'Registration may have succeeded but there was a server error. Please try logging in with your credentials, or try a different username/email if the account already exists.');
           } else {
-            throw Exception('Server error during registration. Please try again or contact support if the issue persists.');
+            throw Exception(
+                'Server error during registration. Please try again or contact support if the issue persists.');
           }
         } else if (statusCode == 409) {
           // Conflict - user already exists
-          throw Exception('An account with this username or email already exists. Please try logging in or use different credentials.');
+          throw Exception(
+              'An account with this username or email already exists. Please try logging in or use different credentials.');
         } else if (statusCode == 400) {
           // Bad request - validation error
-          throw Exception('Invalid registration data. Please check your input and try again.');
+          throw Exception(
+              'Invalid registration data. Please check your input and try again.');
         }
       }
-      
+
       throw await _handleErrorWithConnectivityCheck(e);
     }
   }
@@ -282,15 +302,15 @@ class AuthManager {
   Future<AuthResponse> signInWithGoogle() async {
     try {
       _logger.i('Attempting Google Sign-In');
-      
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         throw Exception('Google Sign-In was cancelled');
       }
 
-      final GoogleSignInAuthentication googleAuth = 
+      final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-      
+
       if (googleAuth.idToken == null) {
         throw Exception('Failed to get Google ID token');
       }
@@ -299,17 +319,17 @@ class AuthManager {
         'id_token': googleAuth.idToken!,
         'access_token': googleAuth.accessToken,
       });
-      
+
       // Save tokens
       await StorageService.saveTokens(
         accessToken: tokenResponse.accessToken,
         refreshToken: tokenResponse.refreshToken,
       );
-      
+
       // Fetch user profile
       final user = await _authService.getProfile();
       await StorageService.saveUser(user);
-      
+
       // Create AuthResponse for compatibility
       final authResponse = AuthResponse(
         accessToken: tokenResponse.accessToken,
@@ -318,7 +338,7 @@ class AuthManager {
         expiresIn: tokenResponse.expiresIn,
         user: user,
       );
-      
+
       _logger.i('Google Sign-In successful');
       return authResponse;
     } catch (e) {
@@ -433,7 +453,7 @@ class AuthManager {
     try {
       final token = await StorageService.getAccessToken();
       if (token == null) return false;
-      
+
       if (JwtDecoder.isExpired(token)) {
         _logger.i('Access token expired, checking refresh token');
         final refreshToken = await StorageService.getRefreshToken();
@@ -456,14 +476,13 @@ class AuthManager {
           return false;
         }
       }
-      
+
       return true;
     } catch (e) {
       _logger.e('Authentication check failed', error: e);
       return false;
     }
   }
-
 
   String _extractErrorMessage(DioException error) {
     try {
@@ -503,20 +522,22 @@ class AuthManager {
           error.type == DioExceptionType.sendTimeout ||
           error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.connectionError) {
-        
         // Check if it's a localhost connection issue
         if (AppConstants.apiBaseUrl.contains('localhost')) {
-          return Exception('Cannot connect to local server. Please make sure your development server is running on ${AppConstants.apiBaseUrl}');
+          return Exception(
+              'Cannot connect to local server. Please make sure your development server is running on ${AppConstants.apiBaseUrl}');
         } else {
           final isServerUp = await checkServerHealth();
           if (!isServerUp) {
-            return Exception('Server is not responding. Please check your internet connection or try again later.');
+            return Exception(
+                'Server is not responding. Please check your internet connection or try again later.');
           }
         }
-        return Exception('Connection timeout. Please check your network connection and try again.');
+        return Exception(
+            'Connection timeout. Please check your network connection and try again.');
       }
     }
-    
+
     return _handleError(error);
   }
 
@@ -529,7 +550,8 @@ class AuthManager {
           // For specific error messages, provide more user-friendly feedback
           String detail = errorResponse.detail;
           if (detail.toLowerCase().contains('could not create user')) {
-            detail = 'Unable to create account. The username or email might already be taken.';
+            detail =
+                'Unable to create account. The username or email might already be taken.';
           } else if (detail.toLowerCase().contains('duplicate')) {
             detail = 'An account with this username or email already exists.';
           } else if (detail.toLowerCase().contains('validation')) {
@@ -540,7 +562,7 @@ class AuthManager {
           // Fallback to generic error handling
         }
       }
-      
+
       switch (error.response?.statusCode) {
         case 400:
           return Exception('Invalid request. Please check your input.');
@@ -556,8 +578,13 @@ class AuthManager {
           // Check if this is a specific registration error
           if (response?.data is Map<String, dynamic>) {
             final data = response!.data as Map<String, dynamic>;
-            if (data['detail']?.toString().toLowerCase().contains('could not create user') == true) {
-              return Exception('Unable to create account. The username or email might already be taken.');
+            if (data['detail']
+                    ?.toString()
+                    .toLowerCase()
+                    .contains('could not create user') ==
+                true) {
+              return Exception(
+                  'Unable to create account. The username or email might already be taken.');
             }
           }
           return Exception('Server error. Please try again later.');
@@ -565,7 +592,7 @@ class AuthManager {
           return Exception('Network error. Please check your connection.');
       }
     }
-    
+
     return Exception('An unexpected error occurred. Please try again.');
   }
 }

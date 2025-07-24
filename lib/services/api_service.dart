@@ -16,11 +16,12 @@ abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
 
   // Environment endpoints
-  @GET('/api/v1/environments')
+  @GET('/api/v1/environments/')
   Future<List<Environment>> getEnvironments();
 
-  @POST('/api/v1/environments')
-  Future<Environment> createEnvironment(@Body() CreateEnvironmentRequest request);
+  @POST('/api/v1/environments/')
+  Future<Environment> createEnvironment(
+      @Body() CreateEnvironmentRequest request);
 
   @GET('/api/v1/environments/{id}')
   Future<Environment> getEnvironment(@Path('id') String id);
@@ -54,7 +55,7 @@ abstract class ApiService {
   );
 
   // Template endpoints
-  @GET('/api/v1/templates')
+  @GET('/api/v1/templates/')
   Future<List<Template>> getTemplates();
 
   @GET('/api/v1/templates/{id}')
@@ -100,20 +101,28 @@ class ApiManager {
       requestHeader: true,
       responseHeader: false,
       error: true,
-      logPrint: (obj) => _logger.d(obj.toString()),
+      logPrint: (obj) {
+        // Only log essential info, not full request/response details
+        if (obj.toString().contains('ERROR') ||
+            obj.toString().contains('FAIL')) {
+          _logger.e(obj.toString());
+        }
+      },
     ));
 
     // Set timeout configuration
-    _dio.options.connectTimeout = const Duration(milliseconds: AppConstants.connectTimeoutMs);
-    _dio.options.receiveTimeout = const Duration(milliseconds: AppConstants.receiveTimeoutMs);
+    _dio.options.connectTimeout =
+        const Duration(milliseconds: AppConstants.connectTimeoutMs);
+    _dio.options.receiveTimeout =
+        const Duration(milliseconds: AppConstants.receiveTimeoutMs);
   }
 
   // Environment operations
   Future<List<Environment>> getEnvironments() async {
     try {
-      _logger.i('Fetching environments');
+      _logger.d('Fetching environments');
       final environments = await _apiService.getEnvironments();
-      _logger.i('Fetched ${environments.length} environments');
+      _logger.d('Fetched ${environments.length} environments');
       return environments;
     } catch (e) {
       ErrorHandler.logError('Failed to fetch environments', error: e);
@@ -129,14 +138,14 @@ class ApiManager {
   }) async {
     try {
       _logger.i('Creating environment: $name with template: $templateId');
-      
+
       final request = CreateEnvironmentRequest(
         name: name,
         templateId: templateId,
         resourceLimits: resourceLimits,
         environmentVariables: environmentVariables,
       );
-      
+
       final environment = await _apiService.createEnvironment(request);
       _logger.i('Created environment: ${environment.id}');
       return environment;
@@ -281,9 +290,9 @@ class ApiManager {
   // Template operations
   Future<List<Template>> getTemplates() async {
     try {
-      _logger.i('Fetching templates');
+      _logger.d('Fetching templates');
       final templates = await _apiService.getTemplates();
-      _logger.i('Fetched ${templates.length} templates');
+      _logger.d('Fetched ${templates.length} templates');
       return templates;
     } catch (e) {
       ErrorHandler.logError('Failed to fetch templates', error: e);

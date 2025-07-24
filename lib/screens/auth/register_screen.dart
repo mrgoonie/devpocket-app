@@ -37,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -55,11 +55,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        fullName: _fullNameController.text.trim().isEmpty 
-            ? null 
+        fullName: _fullNameController.text.trim().isEmpty
+            ? null
             : _fullNameController.text.trim(),
       );
-      
+
       if (mounted) {
         // Navigate to email verification screen
         Navigator.pushReplacement(
@@ -125,12 +125,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 20),
-                    
+
                     // Header
-                    _buildHeader().animate().fadeIn(duration: 600.ms).slideY(begin: -0.3),
-                    
+                    _buildHeader()
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .slideY(begin: -0.3),
+
                     const SizedBox(height: 40),
-                    
+
                     // Username Field
                     BrutalistTextField(
                       controller: _usernameController,
@@ -148,10 +151,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         }
                         return null;
                       },
-                    ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideX(begin: -0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 200.ms, duration: 600.ms)
+                        .slideX(begin: -0.3),
+
                     const SizedBox(height: 16),
-                    
+
                     // Email Field
                     BrutalistTextField(
                       controller: _emailController,
@@ -162,24 +168,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
                           return 'Please enter a valid email address';
                         }
                         return null;
                       },
-                    ).animate().fadeIn(delay: 300.ms, duration: 600.ms).slideX(begin: 0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 300.ms, duration: 600.ms)
+                        .slideX(begin: 0.3),
+
                     const SizedBox(height: 16),
-                    
+
                     // Full Name Field (Optional)
                     BrutalistTextField(
                       controller: _fullNameController,
                       label: 'Full Name (Optional)',
                       textInputAction: TextInputAction.next,
-                    ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideX(begin: -0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 400.ms, duration: 600.ms)
+                        .slideX(begin: -0.3),
+
                     const SizedBox(height: 16),
-                    
+
                     // Password Field
                     BrutalistTextField(
                       controller: _passwordController,
@@ -188,7 +201,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       textInputAction: TextInputAction.next,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: AppTheme.secondaryText,
                         ),
                         onPressed: () {
@@ -204,15 +219,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value.length < 8) {
                           return 'Password must be at least 8 characters';
                         }
-                        if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(value)) {
+                        if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)')
+                            .hasMatch(value)) {
                           return 'Password must contain uppercase, lowercase, and number';
                         }
                         return null;
                       },
-                    ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideX(begin: 0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 500.ms, duration: 600.ms)
+                        .slideX(begin: 0.3),
+
                     const SizedBox(height: 16),
-                    
+
                     // Confirm Password Field
                     BrutalistTextField(
                       controller: _confirmPasswordController,
@@ -222,7 +241,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onFieldSubmitted: (_) => _handleRegister(),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                          _obscureConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: AppTheme.secondaryText,
                         ),
                         onPressed: () {
@@ -240,32 +261,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         }
                         return null;
                       },
-                    ).animate().fadeIn(delay: 600.ms, duration: 600.ms).slideX(begin: -0.3),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 600.ms, duration: 600.ms)
+                        .slideX(begin: -0.3),
+
                     const SizedBox(height: 24),
-                    
+
                     // Terms and Conditions
-                    _buildTermsCheckbox().animate().fadeIn(delay: 700.ms, duration: 600.ms),
-                    
+                    _buildTermsCheckbox()
+                        .animate()
+                        .fadeIn(delay: 700.ms, duration: 600.ms),
+
                     const SizedBox(height: 32),
-                    
+
                     // Register Button
                     BrutalistButton(
-                      onPressed: authProvider.isLoading ? null : _handleRegister,
+                      onPressed:
+                          authProvider.isLoading ? null : _handleRegister,
                       isLoading: authProvider.isLoading,
                       child: const Text('CREATE ACCOUNT'),
-                    ).animate().fadeIn(delay: 800.ms, duration: 600.ms).scale(begin: const Offset(0.8, 0.8)),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 800.ms, duration: 600.ms)
+                        .scale(begin: const Offset(0.8, 0.8)),
+
                     const SizedBox(height: 20),
-                    
+
                     // Or Divider
-                    _buildOrDivider().animate().fadeIn(delay: 900.ms, duration: 600.ms),
-                    
+                    _buildOrDivider()
+                        .animate()
+                        .fadeIn(delay: 900.ms, duration: 600.ms),
+
                     const SizedBox(height: 20),
-                    
+
                     // Google Sign In Button
                     BrutalistButton(
-                      onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
+                      onPressed:
+                          authProvider.isLoading ? null : _handleGoogleSignIn,
                       backgroundColor: AppTheme.primaryWhite,
                       foregroundColor: AppTheme.primaryBlack,
                       isLoading: authProvider.isLoading,
@@ -281,8 +314,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const Text('CONTINUE WITH GOOGLE'),
                         ],
                       ),
-                    ).animate().fadeIn(delay: 1000.ms, duration: 600.ms).scale(begin: const Offset(0.8, 0.8)),
-                    
+                    )
+                        .animate()
+                        .fadeIn(delay: 1000.ms, duration: 600.ms)
+                        .scale(begin: const Offset(0.8, 0.8)),
+
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -300,16 +336,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Text(
           'Join DevPocket',
           style: Theme.of(context).textTheme.displayMedium?.copyWith(
-            color: AppTheme.neonPink,
-            fontWeight: FontWeight.w900,
-          ),
+                color: AppTheme.neonPink,
+                fontWeight: FontWeight.w900,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
           'Start coding on mobile today',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTheme.secondaryText,
-          ),
+                color: AppTheme.secondaryText,
+              ),
         ),
       ],
     );
@@ -371,9 +407,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Text(
             'OR',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedText,
-              fontWeight: FontWeight.bold,
-            ),
+                  color: AppTheme.mutedText,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
         const Expanded(child: Divider(color: AppTheme.darkBorder)),

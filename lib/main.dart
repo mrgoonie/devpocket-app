@@ -13,7 +13,7 @@ import 'utils/error_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -23,13 +23,13 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-  
+
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   // Set up global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
     ErrorHandler.logError(
@@ -42,7 +42,7 @@ void main() async {
       },
     );
   };
-  
+
   runApp(const DevPocketApp());
 }
 
@@ -128,7 +128,17 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
-  final Logger _logger = Logger();
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0, // Don't show method stack
+      errorMethodCount: 3, // Show only 3 methods for errors
+      lineLength: 80, // Shorter lines
+      colors: true, // Keep colors
+      printEmojis: false, // Remove emojis for cleaner output
+      dateTimeFormat: DateTimeFormat.none, // Don't show timestamps in debug
+    ),
+    level: Level.info, // Only show info and above in production
+  );
 
   @override
   void initState() {
@@ -139,10 +149,10 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeApp() async {
     try {
       _logger.i('Initializing DevPocket app...');
-      
+
       // Add any additional initialization here
       // For example: checking for app updates, initializing analytics, etc.
-      
+
       _logger.i('App initialization completed');
     } catch (e, stackTrace) {
       ErrorHandler.logError(
@@ -182,17 +192,18 @@ class _AppInitializerState extends State<AppInitializer> {
                     const SizedBox(height: 24),
                     Text(
                       'Failed to initialize',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppTheme.primaryText,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: AppTheme.primaryText,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       authProvider.error!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.secondaryText,
-                      ),
+                            color: AppTheme.secondaryText,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),

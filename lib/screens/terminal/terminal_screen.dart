@@ -8,6 +8,7 @@ import '../../models/enums.dart';
 import '../../providers/environment_provider.dart';
 import '../../services/websocket_service.dart';
 import '../../widgets/brutalist_button.dart';
+import '../../widgets/create_environment_sheet.dart';
 
 class TerminalScreen extends StatefulWidget {
   const TerminalScreen({super.key});
@@ -46,19 +47,19 @@ class _TerminalScreenState extends State<TerminalScreen>
     _terminal = Terminal(
       maxLines: AppConstants.terminalMaxLines,
     );
-    
+
     _terminalController = TerminalController();
-    
+
     // Handle terminal input
     _terminal!.onOutput = (data) {
       _webSocketService?.sendCommand(data);
     };
-    
+
     // Handle terminal resize
     _terminal!.onResize = (width, height, pixelWidth, pixelHeight) {
       _webSocketService?.resize(width, height);
     };
-    
+
     // Connect to current environment if available
     final environmentProvider = context.read<EnvironmentProvider>();
     if (environmentProvider.currentEnvironment != null) {
@@ -67,28 +68,28 @@ class _TerminalScreenState extends State<TerminalScreen>
   }
 
   void _connectToEnvironment(String environmentId) {
-    if (_currentEnvironmentId == environmentId && 
+    if (_currentEnvironmentId == environmentId &&
         _webSocketService?.isConnected == true) {
       return; // Already connected to this environment
     }
 
     // Disconnect from previous environment
     _webSocketService?.disconnect();
-    
+
     // Clear terminal
     _terminal?.buffer.clear();
     _terminal?.write('\x1b[2J\x1b[H'); // Clear screen and move cursor to top
-    
+
     _currentEnvironmentId = environmentId;
-    
+
     // Create new WebSocket connection
     _webSocketService = WebSocketService(environmentId: environmentId);
-    
+
     // Listen to WebSocket output
     _webSocketService!.output.listen((data) {
       _terminal?.write(data);
     });
-    
+
     // Listen to connection status
     _webSocketService!.connectionStatus.listen((status) {
       if (mounted) {
@@ -97,37 +98,38 @@ class _TerminalScreenState extends State<TerminalScreen>
         });
       }
     });
-    
+
     // Connect to WebSocket
     _webSocketService!.connect();
-    
+
     // Show connection message
-    _terminal?.write('\x1b[32mConnecting to environment: $environmentId\x1b[0m\r\n');
+    _terminal
+        ?.write('\x1b[32mConnecting to environment: $environmentId\x1b[0m\r\n');
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Consumer<EnvironmentProvider>(
       builder: (context, environmentProvider, child) {
         final currentEnvironment = environmentProvider.currentEnvironment;
-        
+
         // Auto-connect when environment changes
-        if (currentEnvironment != null && 
+        if (currentEnvironment != null &&
             currentEnvironment.id != _currentEnvironmentId) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _connectToEnvironment(currentEnvironment.id);
           });
         }
-        
+
         return Scaffold(
           backgroundColor: AppTheme.darkBackground,
           body: Column(
             children: [
               // Terminal Header
               _buildTerminalHeader(currentEnvironment),
-              
+
               // Terminal Content
               Expanded(
                 child: currentEnvironment == null
@@ -169,9 +171,9 @@ class _TerminalScreenState extends State<TerminalScreen>
               size: 20,
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Environment info
           Expanded(
             child: Column(
@@ -180,28 +182,28 @@ class _TerminalScreenState extends State<TerminalScreen>
                 Text(
                   environment?.name ?? 'No Environment',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.primaryText,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.primaryText,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  environment != null 
+                  environment != null
                       ? 'Template: ${environment.templateId}'
                       : 'Select an environment to start coding',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.secondaryText,
-                  ),
+                        color: AppTheme.secondaryText,
+                      ),
                 ),
               ],
             ),
           ),
-          
+
           // Connection status
           _buildConnectionIndicator(),
-          
+
           const SizedBox(width: 12),
-          
+
           // Actions
           _buildTerminalActions(environment),
         ],
@@ -213,7 +215,7 @@ class _TerminalScreenState extends State<TerminalScreen>
     Color color;
     String tooltip;
     IconData icon;
-    
+
     switch (_connectionStatus) {
       case ConnectionStatus.connected:
         color = AppTheme.successColor;
@@ -241,7 +243,7 @@ class _TerminalScreenState extends State<TerminalScreen>
         icon = Icons.error_outline;
         break;
     }
-    
+
     return Tooltip(
       message: tooltip,
       child: Icon(
@@ -269,7 +271,7 @@ class _TerminalScreenState extends State<TerminalScreen>
           ),
           tooltip: 'Clear Terminal',
         ),
-        
+
         // Reconnect
         if (_connectionStatus == ConnectionStatus.error ||
             _connectionStatus == ConnectionStatus.disconnected)
@@ -300,31 +302,26 @@ class _TerminalScreenState extends State<TerminalScreen>
               size: 64,
               color: AppTheme.mutedText,
             ),
-            
             const SizedBox(height: 24),
-            
             Text(
               'No Environment Selected',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.primaryText,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.primaryText,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-            
             const SizedBox(height: 12),
-            
             Text(
               'Create or select an environment to start coding',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.secondaryText,
-              ),
+                    color: AppTheme.secondaryText,
+                  ),
               textAlign: TextAlign.center,
             ),
-            
             const SizedBox(height: 32),
-            
             BrutalistButton(
-              onPressed: () => _showCreateEnvironmentDialog(environmentProvider),
+              onPressed: () =>
+                  _showCreateEnvironmentDialog(environmentProvider),
               child: const Text('CREATE ENVIRONMENT'),
             ),
           ],
@@ -340,7 +337,7 @@ class _TerminalScreenState extends State<TerminalScreen>
     String statusMessage;
     String actionMessage;
     Color statusColor;
-    
+
     switch (environment.status) {
       case EnvironmentStatus.creating:
         statusMessage = 'Environment is starting up...';
@@ -367,7 +364,7 @@ class _TerminalScreenState extends State<TerminalScreen>
         actionMessage = 'Please check the environment status';
         statusColor = AppTheme.mutedText;
     }
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -379,35 +376,30 @@ class _TerminalScreenState extends State<TerminalScreen>
               size: 64,
               color: statusColor,
             ),
-            
             const SizedBox(height: 24),
-            
             Text(
               statusMessage,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                  ),
               textAlign: TextAlign.center,
             ),
-            
             const SizedBox(height: 12),
-            
             Text(
               actionMessage,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.secondaryText,
-              ),
+                    color: AppTheme.secondaryText,
+                  ),
               textAlign: TextAlign.center,
             ),
-            
             const SizedBox(height: 32),
-            
             if (environment.status == EnvironmentStatus.stopped)
               BrutalistButton(
                 onPressed: environmentProvider.isLoading
                     ? null
-                    : () => _startEnvironment(environmentProvider, environment.id),
+                    : () =>
+                        _startEnvironment(environmentProvider, environment.id),
                 isLoading: environmentProvider.isLoading,
                 child: const Text('START ENVIRONMENT'),
               ),
@@ -425,7 +417,7 @@ class _TerminalScreenState extends State<TerminalScreen>
         ),
       );
     }
-    
+
     return Container(
       color: AppTheme.terminalTheme['background'],
       child: TerminalView(
@@ -465,17 +457,18 @@ class _TerminalScreenState extends State<TerminalScreen>
   }
 
   void _showCreateEnvironmentDialog(EnvironmentProvider environmentProvider) {
-    // This would typically show the same dialog as in main_screen.dart
-    // For now, just show a simple message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Use the environment selector above to create a new environment'),
-        backgroundColor: AppTheme.infoColor,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CreateEnvironmentSheet(
+        environmentProvider: environmentProvider,
       ),
     );
   }
 
-  void _startEnvironment(EnvironmentProvider environmentProvider, String id) async {
+  void _startEnvironment(
+      EnvironmentProvider environmentProvider, String id) async {
     try {
       await environmentProvider.startEnvironment(id);
       if (mounted) {
@@ -488,9 +481,10 @@ class _TerminalScreenState extends State<TerminalScreen>
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = environmentProvider.error ?? 'Failed to start environment';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to start environment: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppTheme.errorColor,
           ),
         );

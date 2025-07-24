@@ -15,7 +15,7 @@ class ErrorResponse extends Equatable {
     this.context,
   });
 
-  factory ErrorResponse.fromJson(Map<String, dynamic> json) => 
+  factory ErrorResponse.fromJson(Map<String, dynamic> json) =>
       _$ErrorResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ErrorResponseToJson(this);
 

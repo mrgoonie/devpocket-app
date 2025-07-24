@@ -6,19 +6,19 @@ part 'metrics_response.g.dart';
 class MetricsResponse {
   @JsonKey(name: 'cpu_usage')
   final double? cpuUsage;
-  
+
   @JsonKey(name: 'memory_usage')
   final double? memoryUsage;
-  
+
   @JsonKey(name: 'disk_usage')
   final double? diskUsage;
-  
+
   @JsonKey(name: 'network_in')
   final double? networkIn;
-  
+
   @JsonKey(name: 'network_out')
   final double? networkOut;
-  
+
   @JsonKey(name: 'timestamp')
   final DateTime? timestamp;
 
@@ -41,7 +41,7 @@ class MetricsResponse {
 class LogsResponse {
   final List<String> logs;
   final int total;
-  
+
   @JsonKey(name: 'has_more')
   final bool hasMore;
 
@@ -64,7 +64,7 @@ class TemplateResponse {
   final String description;
   final String image;
   final Map<String, dynamic>? config;
-  
+
   @JsonKey(name: 'default_resources')
   final Map<String, dynamic>? defaultResources;
 

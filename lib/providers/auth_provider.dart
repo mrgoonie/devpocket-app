@@ -7,39 +7,40 @@ import '../services/storage_service.dart';
 class AuthProvider extends ChangeNotifier {
   final Logger _logger = Logger();
   final AuthManager _authManager = AuthManager();
-  
+
   User? _user;
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
-  
+
   // Getters
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
   bool get isInitialized => _isInitialized;
-  
+
   AuthProvider() {
     _initialize();
   }
-  
+
   Future<void> _initialize() async {
     try {
       _setLoading(true);
-      
+
       // Check if user is already authenticated
       final isAuth = await _authManager.isAuthenticated();
       if (isAuth) {
         // Get user data from storage first
         _user = await StorageService.getUser();
-        
+
         // Try to get fresh user data from API
         try {
           final freshUser = await _authManager.getProfile();
           _user = freshUser;
         } catch (e) {
-          _logger.w('Failed to fetch fresh user data, using cached data', error: e);
+          _logger.w('Failed to fetch fresh user data, using cached data',
+              error: e);
           // If we can't get fresh data but have cached data, that's fine
           if (_user == null) {
             // If no cached data either, clear everything
@@ -48,7 +49,7 @@ class AuthProvider extends ChangeNotifier {
           }
         }
       }
-      
+
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
@@ -58,15 +59,15 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> login(String email, String password) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       final response = await _authManager.login(email, password);
       _user = response.user;
-      
+
       _logger.i('User logged in successfully: ${_user?.email}');
       notifyListeners();
     } catch (e) {
@@ -77,7 +78,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> register({
     required String username,
     required String email,
@@ -86,7 +87,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       final response = await _authManager.register(
         username: username,
@@ -95,7 +96,7 @@ class AuthProvider extends ChangeNotifier {
         fullName: fullName,
       );
       _user = response.user;
-      
+
       _logger.i('User registered successfully: ${_user?.email}');
       notifyListeners();
     } catch (e) {
@@ -106,15 +107,15 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> signInWithGoogle() async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       final response = await _authManager.signInWithGoogle();
       _user = response.user;
-      
+
       _logger.i('User signed in with Google successfully: ${_user?.email}');
       notifyListeners();
     } catch (e) {
@@ -125,15 +126,15 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> logout() async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       await _authManager.logout();
       _user = null;
-      
+
       _logger.i('User logged out successfully');
       notifyListeners();
     } catch (e) {
@@ -143,10 +144,10 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> refreshUserProfile() async {
     if (!isAuthenticated) return;
-    
+
     try {
       final freshUser = await _authManager.getProfile();
       _user = freshUser;
@@ -157,20 +158,20 @@ class AuthProvider extends ChangeNotifier {
       _setError(e.toString());
     }
   }
-  
+
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       await _authManager.changePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
-      
+
       _logger.i('Password changed successfully');
     } catch (e) {
       _logger.e('Password change failed', error: e);
@@ -180,11 +181,11 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> forgotPassword(String email) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       await _authManager.forgotPassword(email);
       _logger.i('Password reset email sent');
@@ -196,20 +197,20 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> resetPassword({
     required String token,
     required String newPassword,
   }) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       await _authManager.resetPassword(
         token: token,
         newPassword: newPassword,
       );
-      
+
       _logger.i('Password reset successfully');
     } catch (e) {
       _logger.e('Password reset failed', error: e);
@@ -219,7 +220,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> verifyEmail(String verificationCode) async {
     await _performAuthAction(
       () => _authManager.verifyEmail(verificationCode),
@@ -237,14 +238,14 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _setError(null);
   }
-  
+
   Future<void> _performAuthAction(
     Future<void> Function() action,
     String actionName,
   ) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       await action();
       _logger.i('$actionName completed successfully');
@@ -264,7 +265,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   void _setError(String? value) {
     if (_error != value) {
       _error = value;

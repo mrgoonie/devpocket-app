@@ -7,8 +7,8 @@ import '../../providers/environment_provider.dart';
 import '../terminal/terminal_screen.dart';
 import '../webview/webview_screen.dart';
 import '../settings/settings_screen.dart';
-import '../../widgets/brutalist_button.dart';
 import '../../widgets/environment_selector.dart';
+import '../../widgets/create_environment_sheet.dart';
 import '../../models/enums.dart';
 
 class MainScreen extends StatefulWidget {
@@ -71,11 +71,11 @@ class _MainScreenState extends State<MainScreen>
               children: [
                 // Top Bar
                 _buildTopBar(authProvider, environmentProvider),
-                
+
                 // Environment Selector
                 if (environmentProvider.environments.isNotEmpty)
                   _buildEnvironmentSelector(environmentProvider),
-                
+
                 // Tab Content
                 Expanded(
                   child: TabBarView(
@@ -90,7 +90,7 @@ class _MainScreenState extends State<MainScreen>
               ],
             ),
           ),
-          
+
           // Custom Bottom Navigation
           bottomNavigationBar: _buildBottomNavigation(),
         );
@@ -98,7 +98,8 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
-  Widget _buildTopBar(AuthProvider authProvider, EnvironmentProvider environmentProvider) {
+  Widget _buildTopBar(
+      AuthProvider authProvider, EnvironmentProvider environmentProvider) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
@@ -113,27 +114,29 @@ class _MainScreenState extends State<MainScreen>
           Text(
             'DevPocket',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: _tabs[_currentIndex].activeColor,
-              fontWeight: FontWeight.w900,
-            ),
-          ).animate().shimmer(duration: 2.seconds, color: _tabs[_currentIndex].activeColor.withValues(alpha: 0.3)),
-          
+                  color: _tabs[_currentIndex].activeColor,
+                  fontWeight: FontWeight.w900,
+                ),
+          ).animate().shimmer(
+              duration: 2.seconds,
+              color: _tabs[_currentIndex].activeColor.withValues(alpha: 0.3)),
+
           const Spacer(),
-          
+
           // Connection Status
           _buildConnectionStatus(environmentProvider),
-          
+
           const SizedBox(width: 12),
-          
+
           // Refresh Button
           IconButton(
-            onPressed: environmentProvider.isLoading 
-                ? null 
+            onPressed: environmentProvider.isLoading
+                ? null
                 : () => environmentProvider.fetchEnvironments(),
             icon: Icon(
               Icons.refresh,
-              color: environmentProvider.isLoading 
-                  ? AppTheme.mutedText 
+              color: environmentProvider.isLoading
+                  ? AppTheme.mutedText
                   : AppTheme.secondaryText,
             ),
           ),
@@ -179,10 +182,6 @@ class _MainScreenState extends State<MainScreen>
           statusText = 'Error';
           statusIcon = Icons.error_outline;
           break;
-        default:
-          statusColor = AppTheme.mutedText;
-          statusText = currentEnv.status.name.toUpperCase();
-          statusIcon = Icons.circle_outlined;
       }
     }
 
@@ -193,18 +192,16 @@ class _MainScreenState extends State<MainScreen>
           statusIcon,
           size: 12,
           color: statusColor,
-        ).animate(onPlay: (controller) => controller.repeat())
-            .shimmer(duration: 2.seconds, color: statusColor.withValues(alpha: 0.5)),
-        
+        ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+            duration: 2.seconds, color: statusColor.withValues(alpha: 0.5)),
         const SizedBox(width: 6),
-        
         Text(
           statusText,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: statusColor,
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-          ),
+                color: statusColor,
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
         ),
       ],
     );
@@ -244,18 +241,18 @@ class _MainScreenState extends State<MainScreen>
           final index = entry.key;
           final tab = entry.value;
           final isActive = index == _currentIndex;
-          
+
           return Tab(
             height: 60,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: isActive 
-                    ? tab.activeColor.withValues(alpha: 0.1) 
+                color: isActive
+                    ? tab.activeColor.withValues(alpha: 0.1)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
-                border: isActive 
+                border: isActive
                     ? Border.all(color: tab.activeColor, width: 2)
                     : null,
               ),
@@ -265,18 +262,20 @@ class _MainScreenState extends State<MainScreen>
                   Icon(
                     tab.icon,
                     size: 24,
-                    color: isActive ? tab.activeColor : AppTheme.mutedText,
-                  ).animate(target: isActive ? 1 : 0)
-                      .scale(duration: 200.ms),
-                  
+                    color: isActive
+                        ? tab.activeColor
+                        : AppTheme.primaryText.withValues(alpha: 0.7),
+                  ).animate(target: isActive ? 1 : 0).scale(duration: 200.ms),
                   const SizedBox(height: 4),
-                  
                   Text(
                     tab.label,
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                      color: isActive ? tab.activeColor : AppTheme.mutedText,
+                      fontWeight:
+                          isActive ? FontWeight.bold : FontWeight.normal,
+                      color: isActive
+                          ? tab.activeColor
+                          : AppTheme.primaryText.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -296,7 +295,7 @@ class _MainScreenState extends State<MainScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _CreateEnvironmentSheet(
+      builder: (context) => CreateEnvironmentSheet(
         environmentProvider: environmentProvider,
       ),
     );
@@ -313,247 +312,4 @@ class TabItem {
     required this.label,
     required this.activeColor,
   });
-}
-
-class _CreateEnvironmentSheet extends StatefulWidget {
-  final EnvironmentProvider environmentProvider;
-
-  const _CreateEnvironmentSheet({
-    required this.environmentProvider,
-  });
-
-  @override
-  State<_CreateEnvironmentSheet> createState() => _CreateEnvironmentSheetState();
-}
-
-class _CreateEnvironmentSheetState extends State<_CreateEnvironmentSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  String? _selectedTemplate;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: AppTheme.darkBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(
-          top: BorderSide(color: AppTheme.neonGreen, width: 3),
-          left: BorderSide(color: AppTheme.darkBorder, width: 2),
-          right: BorderSide(color: AppTheme.darkBorder, width: 2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.darkBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Title
-            Text(
-              'Create New Environment',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.neonGreen,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Form
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Name field
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Environment Name',
-                        hintText: 'My Awesome Project',
-                      ),
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) {
-                          return 'Please enter a name';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Template selection
-                    const Text(
-                      'Choose Template',
-                      style: TextStyle(
-                        color: AppTheme.secondaryText,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Template options
-                    Expanded(
-                      child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                        ),
-                        itemCount: _getTemplateOptions().length,
-                        itemBuilder: (context, index) {
-                          final template = _getTemplateOptions()[index];
-                          final isSelected = _selectedTemplate == template['id'];
-                          
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedTemplate = template['id'];
-                              });
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              decoration: BoxDecoration(
-                                color: isSelected 
-                                    ? AppTheme.neonBlue.withValues(alpha: 0.1)
-                                    : AppTheme.darkCard,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected 
-                                      ? AppTheme.neonBlue 
-                                      : AppTheme.darkBorder,
-                                  width: 2,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    template['icon'] as IconData,
-                                    size: 32,
-                                    color: isSelected 
-                                        ? AppTheme.neonBlue 
-                                        : AppTheme.secondaryText,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    template['name'],
-                                    style: TextStyle(
-                                      color: isSelected 
-                                          ? AppTheme.neonBlue 
-                                          : AppTheme.primaryText,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Create button
-                    BrutalistButton(
-                      onPressed: (_selectedTemplate != null && !widget.environmentProvider.isCreating)
-                          ? _createEnvironment
-                          : null,
-                      isLoading: widget.environmentProvider.isCreating,
-                      child: const Text('CREATE ENVIRONMENT'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Map<String, dynamic>> _getTemplateOptions() {
-    return [
-      {
-        'id': 'nodejs',
-        'name': 'Node.js',
-        'icon': Icons.javascript,
-      },
-      {
-        'id': 'python',
-        'name': 'Python',
-        'icon': Icons.code,
-      },
-      {
-        'id': 'react',
-        'name': 'React',
-        'icon': Icons.web,
-      },
-      {
-        'id': 'flutter',
-        'name': 'Flutter',
-        'icon': Icons.phone_android,
-      },
-    ];
-  }
-
-  void _createEnvironment() async {
-    if (!_formKey.currentState!.validate() || _selectedTemplate == null) {
-      return;
-    }
-
-    try {
-      await widget.environmentProvider.createEnvironment(
-        name: _nameController.text.trim(),
-        templateId: _selectedTemplate!,
-      );
-      
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Environment created successfully!'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to create environment: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
-    }
-  }
 }
