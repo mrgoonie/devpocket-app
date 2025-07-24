@@ -71,11 +71,10 @@ CreateEnvironmentRequest _$CreateEnvironmentRequestFromJson(
         Map<String, dynamic> json) =>
     CreateEnvironmentRequest(
       name: json['name'] as String,
-      templateId: json['template_id'] as String,
-      resourceLimits: json['resource_limits'] == null
+      template: json['template'] as String?,
+      resources: json['resources'] == null
           ? null
-          : ResourceLimits.fromJson(
-              json['resource_limits'] as Map<String, dynamic>),
+          : ResourceLimits.fromJson(json['resources'] as Map<String, dynamic>),
       environmentVariables:
           (json['environment_variables'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, e as String),
@@ -86,7 +85,7 @@ Map<String, dynamic> _$CreateEnvironmentRequestToJson(
         CreateEnvironmentRequest instance) =>
     <String, dynamic>{
       'name': instance.name,
-      'template_id': instance.templateId,
-      'resource_limits': instance.resourceLimits?.toJson(),
+      'template': instance.template,
+      'resources': instance.resources?.toJson(),
       'environment_variables': instance.environmentVariables,
     };

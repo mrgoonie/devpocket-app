@@ -17,7 +17,7 @@ abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
 
   // Environment endpoints
-  @GET('/api/v1/environments/')
+  @GET('/api/v1/environments')
   Future<List<Environment>> getEnvironments();
 
   @POST('/api/v1/environments/')
@@ -56,7 +56,7 @@ abstract class ApiService {
   );
 
   // Template endpoints
-  @GET('/api/v1/templates/')
+  @GET('/api/v1/templates')
   Future<List<Template>> getTemplates();
 
   @GET('/api/v1/templates/{id}')
@@ -78,7 +78,7 @@ abstract class ApiService {
   Future<void> initializeTemplates();
 
   // Cluster endpoints
-  @GET('/api/v1/clusters/')
+  @GET('/api/v1/clusters')
   Future<List<Cluster>> getClusters();
 
   @GET('/api/v1/clusters/{id}')
@@ -103,14 +103,16 @@ class ApiManager {
     // Add auth interceptor (reusing from auth_service.dart)
     _dio.interceptors.add(AuthInterceptor());
 
-    // Add redirect handler interceptor
+    // Add redirect handler interceptor for GET requests only
     _dio.interceptors.add(InterceptorsWrapper(
       onResponse: (response, handler) {
-        // Handle redirects manually
+        // Handle redirects manually for GET requests only
         if (response.statusCode == 301 || response.statusCode == 302 || response.statusCode == 307) {
+          final method = response.requestOptions.method;
           final location = response.headers.value('location');
-          if (location != null) {
-            _logger.d('Following redirect from ${response.requestOptions.path} to: $location');
+          
+          if (location != null && method == 'GET') {
+            _logger.d('Following GET redirect from ${response.requestOptions.path} to: $location');
             
             // Construct the full URL for redirect
             String redirectUrl;
@@ -198,17 +200,17 @@ class ApiManager {
 
   Future<Environment> createEnvironment({
     required String name,
-    required String templateId,
-    ResourceLimits? resourceLimits,
+    String? template,
+    ResourceLimits? resources,
     Map<String, String>? environmentVariables,
   }) async {
     try {
-      _logger.i('Creating environment: $name with template: $templateId');
+      _logger.i('Creating environment: $name with template: $template');
 
       final request = CreateEnvironmentRequest(
         name: name,
-        templateId: templateId,
-        resourceLimits: resourceLimits,
+        template: template,
+        resources: resources,
         environmentVariables: environmentVariables,
       );
 
@@ -219,7 +221,7 @@ class ApiManager {
       ErrorHandler.logError(
         'Failed to create environment',
         error: e,
-        context: {'name': name, 'templateId': templateId},
+        context: {'name': name, 'template': template},
       );
       rethrow;
     }

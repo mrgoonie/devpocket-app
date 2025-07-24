@@ -290,7 +290,7 @@ class _CreateEnvironmentSheetState extends State<CreateEnvironmentSheet> {
     try {
       await widget.environmentProvider.createEnvironment(
         name: _nameController.text.trim(),
-        templateId: _selectedTemplate!,
+        template: _selectedTemplate!,
       );
 
       if (mounted) {

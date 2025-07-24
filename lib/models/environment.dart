@@ -150,19 +150,19 @@ class Resources extends Equatable {
 class CreateEnvironmentRequest extends Equatable {
   final String name;
 
-  @JsonKey(name: 'template_id')
-  final String templateId;
+  @JsonKey(name: 'template')
+  final String? template;
 
-  @JsonKey(name: 'resource_limits')
-  final ResourceLimits? resourceLimits;
+  @JsonKey(name: 'resources')
+  final ResourceLimits? resources;
 
   @JsonKey(name: 'environment_variables')
   final Map<String, String>? environmentVariables;
 
   const CreateEnvironmentRequest({
     required this.name,
-    required this.templateId,
-    this.resourceLimits,
+    this.template,
+    this.resources,
     this.environmentVariables,
   });
 
@@ -172,5 +172,5 @@ class CreateEnvironmentRequest extends Equatable {
 
   @override
   List<Object?> get props =>
-      [name, templateId, resourceLimits, environmentVariables];
+      [name, template, resources, environmentVariables];
 }

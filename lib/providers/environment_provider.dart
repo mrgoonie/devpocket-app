@@ -77,8 +77,8 @@ class EnvironmentProvider extends ChangeNotifier {
 
   Future<void> createEnvironment({
     required String name,
-    required String templateId,
-    ResourceLimits? resourceLimits,
+    String? template,
+    ResourceLimits? resources,
     Map<String, String>? environmentVariables,
   }) async {
     _setCreating(true);
@@ -89,8 +89,8 @@ class EnvironmentProvider extends ChangeNotifier {
 
       final environment = await _apiManager.createEnvironment(
         name: name,
-        templateId: templateId,
-        resourceLimits: resourceLimits,
+        template: template,
+        resources: resources,
         environmentVariables: environmentVariables,
       );
 
