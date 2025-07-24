@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../config/theme.dart';
 import '../models/environment.dart';
+import '../models/enums.dart';
 
 class EnvironmentSelector extends StatelessWidget {
   final List<Environment> environments;
@@ -81,14 +82,19 @@ class EnvironmentSelector extends StatelessWidget {
   }) {
     Color statusColor;
     switch (environment.status) {
-      case 'running':
+      case EnvironmentStatus.running:
         statusColor = AppTheme.successColor;
         break;
-      case 'starting':
-      case 'stopping':
+      case EnvironmentStatus.creating:
         statusColor = AppTheme.warningColor;
         break;
-      case 'stopped':
+      case EnvironmentStatus.stopped:
+        statusColor = AppTheme.errorColor;
+        break;
+      case EnvironmentStatus.terminated:
+        statusColor = AppTheme.errorColor;
+        break;
+      case EnvironmentStatus.error:
         statusColor = AppTheme.errorColor;
         break;
       default:
@@ -133,8 +139,7 @@ class EnvironmentSelector extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ).animate(onPlay: (controller) {
-                if (environment.status == 'starting' || 
-                    environment.status == 'stopping') {
+                if (environment.status == EnvironmentStatus.creating) {
                   controller.repeat();
                 }
               }).shimmer(
@@ -159,7 +164,7 @@ class EnvironmentSelector extends StatelessWidget {
               ),
               
               // Template badge
-              if (environment.template.isNotEmpty) ...[
+              if (environment.templateId.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -167,11 +172,11 @@ class EnvironmentSelector extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: _getTemplateColor(environment.template),
+                    color: _getTemplateColor(environment.templateId),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    environment.template.toUpperCase(),
+                    environment.templateId.toUpperCase(),
                     style: const TextStyle(
                       color: AppTheme.primaryBlack,
                       fontSize: 8,

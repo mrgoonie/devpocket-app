@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/theme.dart';
 import '../../models/environment.dart';
+import '../../models/enums.dart';
 import '../../providers/environment_provider.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -151,7 +152,7 @@ class _WebViewScreenState extends State<WebViewScreen>
               Expanded(
                 child: currentEnvironment == null
                     ? _buildNoEnvironmentState()
-                    : currentEnvironment.status != 'running'
+                    : currentEnvironment.status != EnvironmentStatus.running
                         ? _buildEnvironmentNotRunningState(currentEnvironment)
                         : _buildWebViewContent(),
               ),

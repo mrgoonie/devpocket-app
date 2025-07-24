@@ -9,6 +9,7 @@ import '../webview/webview_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../widgets/brutalist_button.dart';
 import '../../widgets/environment_selector.dart';
+import '../../models/enums.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -153,29 +154,34 @@ class _MainScreenState extends State<MainScreen>
       statusIcon = Icons.circle_outlined;
     } else {
       switch (currentEnv.status) {
-        case 'running':
+        case EnvironmentStatus.running:
           statusColor = AppTheme.successColor;
           statusText = 'Connected';
           statusIcon = Icons.circle;
           break;
-        case 'starting':
+        case EnvironmentStatus.creating:
           statusColor = AppTheme.warningColor;
           statusText = 'Starting...';
           statusIcon = Icons.circle_outlined;
           break;
-        case 'stopping':
-          statusColor = AppTheme.warningColor;
-          statusText = 'Stopping...';
-          statusIcon = Icons.circle_outlined;
-          break;
-        case 'stopped':
+        case EnvironmentStatus.stopped:
           statusColor = AppTheme.errorColor;
           statusText = 'Disconnected';
           statusIcon = Icons.circle_outlined;
           break;
+        case EnvironmentStatus.terminated:
+          statusColor = AppTheme.errorColor;
+          statusText = 'Terminated';
+          statusIcon = Icons.circle_outlined;
+          break;
+        case EnvironmentStatus.error:
+          statusColor = AppTheme.errorColor;
+          statusText = 'Error';
+          statusIcon = Icons.error_outline;
+          break;
         default:
           statusColor = AppTheme.mutedText;
-          statusText = currentEnv.status.toUpperCase();
+          statusText = currentEnv.status.name.toUpperCase();
           statusIcon = Icons.circle_outlined;
       }
     }
@@ -527,7 +533,7 @@ class _CreateEnvironmentSheetState extends State<_CreateEnvironmentSheet> {
     try {
       await widget.environmentProvider.createEnvironment(
         name: _nameController.text.trim(),
-        template: _selectedTemplate!,
+        templateId: _selectedTemplate!,
       );
       
       if (mounted) {

@@ -4,6 +4,7 @@ import 'package:xterm/xterm.dart';
 import '../../config/constants.dart';
 import '../../config/theme.dart';
 import '../../models/environment.dart';
+import '../../models/enums.dart';
 import '../../providers/environment_provider.dart';
 import '../../services/websocket_service.dart';
 import '../../widgets/brutalist_button.dart';
@@ -131,7 +132,7 @@ class _TerminalScreenState extends State<TerminalScreen>
               Expanded(
                 child: currentEnvironment == null
                     ? _buildNoEnvironmentState(environmentProvider)
-                    : currentEnvironment.status != 'running'
+                    : currentEnvironment.status != EnvironmentStatus.running
                         ? _buildEnvironmentNotRunningState(
                             currentEnvironment, environmentProvider)
                         : _buildTerminalView(),
@@ -186,7 +187,7 @@ class _TerminalScreenState extends State<TerminalScreen>
                 const SizedBox(height: 2),
                 Text(
                   environment != null 
-                      ? 'Template: ${environment.template}'
+                      ? 'Template: ${environment.templateId}'
                       : 'Select an environment to start coding',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.secondaryText,
@@ -341,23 +342,28 @@ class _TerminalScreenState extends State<TerminalScreen>
     Color statusColor;
     
     switch (environment.status) {
-      case 'starting':
+      case EnvironmentStatus.creating:
         statusMessage = 'Environment is starting up...';
         actionMessage = 'Please wait while your environment boots up';
         statusColor = AppTheme.warningColor;
         break;
-      case 'stopping':
-        statusMessage = 'Environment is shutting down...';
-        actionMessage = 'Please wait for the shutdown to complete';
-        statusColor = AppTheme.warningColor;
-        break;
-      case 'stopped':
+      case EnvironmentStatus.stopped:
         statusMessage = 'Environment is stopped';
         actionMessage = 'Start your environment to begin coding';
         statusColor = AppTheme.errorColor;
         break;
+      case EnvironmentStatus.terminated:
+        statusMessage = 'Environment is terminated';
+        actionMessage = 'Please restart your environment';
+        statusColor = AppTheme.errorColor;
+        break;
+      case EnvironmentStatus.error:
+        statusMessage = 'Environment has an error';
+        actionMessage = 'Please check the environment status';
+        statusColor = AppTheme.errorColor;
+        break;
       default:
-        statusMessage = 'Environment is ${environment.status}';
+        statusMessage = 'Environment is ${environment.status.name}';
         actionMessage = 'Please check the environment status';
         statusColor = AppTheme.mutedText;
     }
@@ -397,7 +403,7 @@ class _TerminalScreenState extends State<TerminalScreen>
             
             const SizedBox(height: 32),
             
-            if (environment.status == 'stopped')
+            if (environment.status == EnvironmentStatus.stopped)
               BrutalistButton(
                 onPressed: environmentProvider.isLoading
                     ? null
