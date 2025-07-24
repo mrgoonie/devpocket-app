@@ -49,6 +49,15 @@ abstract class AuthService {
 
   @POST('/api/v1/auth/resend-verification')
   Future<void> resendVerificationEmail();
+
+  @PUT('/api/v1/users/me')
+  Future<User> updateProfile(@Body() Map<String, dynamic> body);
+
+  @DELETE('/api/v1/users/me')
+  Future<void> deleteAccount();
+
+  @GET('/api/v1/health')
+  Future<Map<String, dynamic>> healthCheck();
 }
 
 class AuthInterceptor extends Interceptor {

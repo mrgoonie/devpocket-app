@@ -5,6 +5,7 @@ import '../models/environment.dart';
 import '../models/metrics_response.dart';
 import '../models/template.dart';
 import '../models/resource_limits.dart';
+import '../models/cluster.dart';
 import '../config/constants.dart';
 import '../utils/error_handler.dart';
 import 'auth_service.dart';
@@ -60,6 +61,31 @@ abstract class ApiService {
 
   @GET('/api/v1/templates/{id}')
   Future<TemplateResponse> getTemplate(@Path('id') String id);
+
+  @POST('/api/v1/templates/')
+  Future<Template> createTemplate(@Body() Map<String, dynamic> body);
+
+  @PUT('/api/v1/templates/{id}')
+  Future<Template> updateTemplate(
+    @Path('id') String id,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/api/v1/templates/{id}')
+  Future<void> deleteTemplate(@Path('id') String id);
+
+  @POST('/api/v1/templates/initialize')
+  Future<void> initializeTemplates();
+
+  // Cluster endpoints
+  @GET('/api/v1/clusters/')
+  Future<List<Cluster>> getClusters();
+
+  @GET('/api/v1/clusters/{id}')
+  Future<Cluster> getCluster(@Path('id') String id);
+
+  @GET('/api/v1/clusters/{id}/health')
+  Future<ClusterHealth> getClusterHealth(@Path('id') String id);
 }
 
 class ApiManager {
