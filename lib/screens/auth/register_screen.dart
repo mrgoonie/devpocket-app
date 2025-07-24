@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/brutalist_button.dart';
 import '../../widgets/brutalist_text_field.dart';
 import '../../config/theme.dart';
+import 'email_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -60,7 +61,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       
       if (mounted) {
-        Navigator.pop(context);
+        // Navigate to email verification screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EmailVerificationScreen(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

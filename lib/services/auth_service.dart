@@ -43,6 +43,12 @@ abstract class AuthService {
 
   @POST('/api/v1/auth/reset-password')
   Future<void> resetPassword(@Body() Map<String, dynamic> body);
+
+  @POST('/api/v1/auth/verify-email')
+  Future<void> verifyEmail(@Body() Map<String, dynamic> body);
+
+  @POST('/api/v1/auth/resend-verification')
+  Future<void> resendVerificationEmail();
 }
 
 class AuthInterceptor extends Interceptor {
@@ -395,6 +401,30 @@ class AuthManager {
       _logger.i('Password reset successful');
     } catch (e) {
       _logger.e('Password reset failed', error: e);
+      throw await _handleErrorWithConnectivityCheck(e);
+    }
+  }
+
+  Future<void> verifyEmail(String verificationCode) async {
+    try {
+      _logger.i('Attempting email verification');
+      await _authService.verifyEmail({
+        'token': verificationCode,
+      });
+      _logger.i('Email verification successful');
+    } catch (e) {
+      _logger.e('Email verification failed', error: e);
+      throw await _handleErrorWithConnectivityCheck(e);
+    }
+  }
+
+  Future<void> resendVerificationEmail() async {
+    try {
+      _logger.i('Attempting to resend verification email');
+      await _authService.resendVerificationEmail();
+      _logger.i('Verification email resent successfully');
+    } catch (e) {
+      _logger.e('Failed to resend verification email', error: e);
       throw await _handleErrorWithConnectivityCheck(e);
     }
   }

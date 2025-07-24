@@ -220,10 +220,44 @@ class AuthProvider extends ChangeNotifier {
     }
   }
   
+  Future<void> verifyEmail(String verificationCode) async {
+    await _performAuthAction(
+      () => _authManager.verifyEmail(verificationCode),
+      'verifyEmail',
+    );
+  }
+
+  Future<void> resendVerificationEmail() async {
+    await _performAuthAction(
+      () => _authManager.resendVerificationEmail(),
+      'resendVerificationEmail',
+    );
+  }
+
   void clearError() {
     _setError(null);
   }
   
+  Future<void> _performAuthAction(
+    Future<void> Function() action,
+    String actionName,
+  ) async {
+    _setLoading(true);
+    _setError(null);
+    
+    try {
+      await action();
+      _logger.i('$actionName completed successfully');
+      notifyListeners();
+    } catch (e) {
+      _logger.e('$actionName failed', error: e);
+      _setError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   void _setLoading(bool value) {
     if (_isLoading != value) {
       _isLoading = value;
