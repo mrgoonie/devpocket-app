@@ -305,13 +305,74 @@ class _CreateEnvironmentSheetState extends State<CreateEnvironmentSheet> {
     } catch (e) {
       if (mounted) {
         final errorMessage = widget.environmentProvider.error ?? 'Failed to create environment';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        _showErrorDialog(errorMessage);
       }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.darkCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(
+              color: AppTheme.errorColor,
+              width: 2,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: AppTheme.errorColor,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Error',
+                style: TextStyle(
+                  color: AppTheme.errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: AppTheme.primaryText,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: AppTheme.darkBackground,
+                foregroundColor: AppTheme.primaryText,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(
+                    color: AppTheme.darkBorder,
+                    width: 2,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
