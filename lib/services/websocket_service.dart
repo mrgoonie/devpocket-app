@@ -47,9 +47,14 @@ class WebSocketService {
         throw Exception('No authentication token available');
       }
 
-      // Build the WebSocket URI correctly
+      // Build the WebSocket URI correctly without extra port
       final wsUrl = '${AppConstants.wsBaseUrl}/api/v1/ws/terminal/$environmentId?token=$token';
-      final uri = Uri.parse(wsUrl);
+      
+      // Ensure no malformed URLs with extra ports
+      final cleanUrl = wsUrl.replaceAll(':0', '');
+      final uri = Uri.parse(cleanUrl);
+
+      _logger.d('Connecting to: $cleanUrl');
 
       _channel = WebSocketChannel.connect(uri);
 
@@ -72,6 +77,17 @@ class WebSocketService {
         stackTrace: stackTrace,
         context: {'environmentId': environmentId},
       );
+
+      // Handle specific error types
+      if (e.toString().contains('403') || e.toString().contains('Forbidden')) {
+        _logger.e('Connection rejected - Environment may not be running or accessible');
+        _outputController.add(
+            '\r\n\x1b[31mConnection rejected: Environment may not be ready or accessible.\x1b[0m\r\n');
+        _outputController.add(
+            '\r\n\x1b[33mPlease ensure the environment is running before connecting.\x1b[0m\r\n');
+        _connectionController.add(ConnectionStatus.error);
+        return; // Don't attempt reconnection for 403 errors
+      }
 
       _connectionController.add(ConnectionStatus.error);
       _scheduleReconnect();
@@ -131,6 +147,15 @@ class WebSocketService {
       error: error,
       context: {'environmentId': environmentId},
     );
+
+    // Handle specific error types
+    if (error.toString().contains('403') || error.toString().contains('Forbidden')) {
+      _logger.e('Connection rejected - Environment may not be running');
+      _outputController.add(
+          '\r\n\x1b[31mConnection rejected: Environment may not be ready.\x1b[0m\r\n');
+      _connectionController.add(ConnectionStatus.error);
+      return; // Don't attempt reconnection for 403 errors
+    }
 
     _connectionController.add(ConnectionStatus.error);
     _scheduleReconnect();

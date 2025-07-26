@@ -191,8 +191,15 @@ class ApiManager {
       _logger.d('Fetching environments');
       final environments = await _apiService.getEnvironments();
       _logger.d('Fetched ${environments.length} environments');
+      
+      // Debug: Log each environment to see if parsing is working
+      for (final env in environments) {
+        _logger.i('Environment: ${env.name} (${env.id}) - Status: ${env.status}');
+      }
+      
       return environments;
     } catch (e) {
+      _logger.e('JSON Parsing Error for environments: $e');
       ErrorHandler.logError('Failed to fetch environments', error: e);
       rethrow;
     }

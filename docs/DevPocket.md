@@ -1,6 +1,6 @@
 # DevPocket - Dev Environment Cloud
 
-Domain: DevPocket.sh
+Domain: DevPocket.app
 
 ---
 

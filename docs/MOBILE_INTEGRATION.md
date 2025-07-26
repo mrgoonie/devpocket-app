@@ -366,16 +366,41 @@ interface EnvironmentService {
 
 ## WebSocket Integration
 
-The WebSocket connection provides real-time terminal access to development environments.
+The DevPocket API provides two WebSocket endpoints for real-time interaction with development environments:
 
-### WebSocket URL Format
+1. **Terminal WebSocket** - Interactive terminal access
+2. **Logs WebSocket** - Real-time log streaming
+
+### WebSocket URL Formats
+
+**Terminal Access:**
 ```
 wss://api.devpocket.io/api/v1/ws/terminal/{environment_id}?token={jwt_token}
 ```
 
-### Message Protocol
+**Log Streaming:**
+```
+wss://api.devpocket.io/api/v1/ws/logs/{environment_id}?token={jwt_token}&follow=true
+```
 
-**Client to Server Messages:**
+### Authentication
+
+WebSocket connections require authentication via JWT token passed as a query parameter. The token must be valid and the user must have access to the specified environment.
+
+**Authentication Failure Response:**
+- Connection closes with code `1008` and reason "Authentication failed"
+
+### Rate Limiting
+
+- **Connection Limit:** Maximum concurrent WebSocket connections per user
+- **Message Rate Limit:** Maximum messages per minute per connection
+- Exceeded limits result in temporary message rejection or connection closure
+
+### Terminal WebSocket Protocol
+
+#### Client to Server Messages
+
+**Terminal Input:**
 ```json
 {
   "type": "input",
@@ -383,15 +408,7 @@ wss://api.devpocket.io/api/v1/ws/terminal/{environment_id}?token={jwt_token}
 }
 ```
 
-**Server to Client Messages:**
-```json
-{
-  "type": "output",
-  "data": "total 64\ndrwxr-xr-x  10 user user 4096 Jan 15 10:00 .\n"
-}
-```
-
-**Resize Terminal:**
+**Terminal Resize:**
 ```json
 {
   "type": "resize",
@@ -400,30 +417,167 @@ wss://api.devpocket.io/api/v1/ws/terminal/{environment_id}?token={jwt_token}
 }
 ```
 
+**Keepalive Ping:**
+```json
+{
+  "type": "ping"
+}
+```
+
+#### Server to Client Messages
+
+**Welcome Message (on connection):**
+```json
+{
+  "type": "welcome",
+  "message": "Connected to my-python-env",
+  "environment": {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "my-python-env",
+    "template": "python",
+    "status": "running"
+  }
+}
+```
+
+**Terminal Output:**
+```json
+{
+  "type": "output",
+  "data": "total 64\ndrwxr-xr-x  10 user user 4096 Jan 15 10:00 .\n"
+}
+```
+
+**Error Message:**
+```json
+{
+  "type": "error",
+  "message": "Rate limit exceeded. Please slow down."
+}
+```
+
+**Keepalive Pong:**
+```json
+{
+  "type": "pong"
+}
+```
+
+### Log Streaming WebSocket Protocol
+
+#### Server to Client Messages
+
+**Log Entry:**
+```json
+{
+  "type": "log",
+  "timestamp": "2024-01-15T12:30:45.123Z",
+  "level": "info",
+  "message": "Application started successfully"
+}
+```
+
+#### Log Levels
+- `debug` - Debug information
+- `info` - General information
+- `warning` - Warning messages
+- `error` - Error messages
+
+### Connection Management
+
+#### Connection States
+1. **Connecting** - Establishing WebSocket connection
+2. **Connected** - Active connection, ready for messages
+3. **Disconnected** - Connection closed normally
+4. **Error** - Connection failed or encountered error
+
+#### Reconnection Strategy
+- Automatic reconnection with exponential backoff
+- Maximum 5 reconnection attempts
+- Initial delay: 2 seconds, doubles with each attempt
+- Connection reset on successful reconnection
+
+#### Keepalive Mechanism
+- Client should send ping messages every 30 seconds
+- Server responds with pong messages
+- Missing pong responses indicate connection issues
+
 ### WebSocket Implementation
 
-**iOS (Swift) - WebSocket Client:**
+**iOS (Swift) - Enhanced WebSocket Client:**
 ```swift
 import Foundation
+import Combine
 
-class TerminalWebSocket: NSObject {
+protocol WebSocketMessage {
+    var type: String { get }
+}
+
+struct TerminalOutputMessage: WebSocketMessage {
+    let type = "output"
+    let data: String
+}
+
+struct WelcomeMessage: WebSocketMessage {
+    let type = "welcome"
+    let message: String
+    let environment: EnvironmentInfo
+}
+
+struct ErrorMessage: WebSocketMessage {
+    let type = "error"
+    let message: String
+}
+
+struct EnvironmentInfo {
+    let id: String
+    let name: String
+    let template: String
+    let status: String
+}
+
+class DevPocketWebSocket: NSObject {
+    enum ConnectionState {
+        case disconnected
+        case connecting
+        case connected
+        case error(Error)
+    }
+    
+    enum WebSocketType {
+        case terminal(String) // environment_id
+        case logs(String, Bool) // environment_id, follow
+    }
+    
     private var webSocket: URLSessionWebSocketTask?
     private var urlSession: URLSession?
-    private let environmentId: String
+    private let wsType: WebSocketType
+    private var pingTimer: Timer?
+    private var reconnectTimer: Timer?
+    private var reconnectAttempts = 0
+    private let maxReconnectAttempts = 5
     
-    var onReceiveData: ((String) -> Void)?
-    var onError: ((Error) -> Void)?
-    var onConnect: (() -> Void)?
-    var onDisconnect: (() -> Void)?
+    @Published var connectionState: ConnectionState = .disconnected
+    @Published var messages: [WebSocketMessage] = []
     
-    init(environmentId: String) {
-        self.environmentId = environmentId
+    private let messageSubject = PassthroughSubject<WebSocketMessage, Never>()
+    var messagePublisher: AnyPublisher<WebSocketMessage, Never> {
+        messageSubject.eraseToAnyPublisher()
+    }
+    
+    init(type: WebSocketType) {
+        self.wsType = type
         super.init()
     }
     
     func connect() {
+        guard connectionState != .connecting else { return }
+        
+        connectionState = .connecting
+        
         guard let token = TokenManager.getToken(for: "access_token"),
-              let url = URL(string: "wss://api.devpocket.io/api/v1/ws/terminal/\(environmentId)?token=\(token)") else {
+              let url = buildWebSocketURL(token: token) else {
+            connectionState = .error(WebSocketError.authenticationFailed)
             return
         }
         
@@ -434,142 +588,560 @@ class TerminalWebSocket: NSObject {
         webSocket?.resume()
         
         receiveMessage()
-        onConnect?()
     }
     
-    func disconnect() {
-        webSocket?.cancel(with: .goingAway, reason: nil)
-        onDisconnect?()
-    }
-    
-    func send(command: String) {
-        let message = ["type": "input", "data": command]
-        guard let data = try? JSONSerialization.data(withJSONObject: message) else { return }
+    private func buildWebSocketURL(token: String) -> URL? {
+        let baseURL = "wss://api.devpocket.io/api/v1/ws"
         
-        webSocket?.send(.data(data)) { [weak self] error in
-            if let error = error {
-                self?.onError?(error)
-            }
+        switch wsType {
+        case .terminal(let envId):
+            return URL(string: "\(baseURL)/terminal/\(envId)?token=\(token)")
+        case .logs(let envId, let follow):
+            return URL(string: "\(baseURL)/logs/\(envId)?token=\(token)&follow=\(follow)")
         }
     }
     
-    func resize(cols: Int, rows: Int) {
-        let message = ["type": "resize", "cols": cols, "rows": rows] as [String : Any]
-        guard let data = try? JSONSerialization.data(withJSONObject: message) else { return }
+    func disconnect() {
+        stopPingTimer()
+        stopReconnectTimer()
+        webSocket?.cancel(with: .goingAway, reason: nil)
+        connectionState = .disconnected
+    }
+    
+    func sendTerminalInput(_ command: String) {
+        sendMessage([
+            "type": "input",
+            "data": command
+        ])
+    }
+    
+    func resizeTerminal(cols: Int, rows: Int) {
+        sendMessage([
+            "type": "resize",
+            "cols": cols,
+            "rows": rows
+        ])
+    }
+    
+    func sendPing() {
+        sendMessage(["type": "ping"])
+    }
+    
+    private func sendMessage(_ message: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: message),
+              webSocket?.state == .running else { return }
         
-        webSocket?.send(.data(data)) { _ in }
+        webSocket?.send(.data(data)) { [weak self] error in
+            if let error = error {
+                self?.handleError(error)
+            }
+        }
     }
     
     private func receiveMessage() {
         webSocket?.receive { [weak self] result in
             switch result {
             case .success(let message):
-                switch message {
-                case .data(let data):
-                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let type = json["type"] as? String,
-                       type == "output",
-                       let output = json["data"] as? String {
-                        self?.onReceiveData?(output)
-                    }
-                case .string(let text):
-                    print("Received string: \(text)")
-                @unknown default:
-                    break
-                }
-                self?.receiveMessage()
+                self?.handleReceivedMessage(message)
+                self?.receiveMessage() // Continue listening
                 
             case .failure(let error):
-                self?.onError?(error)
+                self?.handleError(error)
             }
+        }
+    }
+    
+    private func handleReceivedMessage(_ message: URLSessionWebSocketTask.Message) {
+        let data: Data?
+        
+        switch message {
+        case .data(let messageData):
+            data = messageData
+        case .string(let text):
+            data = text.data(using: .utf8)
+        @unknown default:
+            return
+        }
+        
+        guard let data = data,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let type = json["type"] as? String else {
+            return
+        }
+        
+        let wsMessage = parseMessage(type: type, json: json)
+        DispatchQueue.main.async {
+            self.messages.append(wsMessage)
+            self.messageSubject.send(wsMessage)
+        }
+    }
+    
+    private func parseMessage(type: String, json: [String: Any]) -> WebSocketMessage {
+        switch type {
+        case "output":
+            return TerminalOutputMessage(data: json["data"] as? String ?? "")
+            
+        case "welcome":
+            let envData = json["environment"] as? [String: Any] ?? [:]
+            let environment = EnvironmentInfo(
+                id: envData["id"] as? String ?? "",
+                name: envData["name"] as? String ?? "",
+                template: envData["template"] as? String ?? "",
+                status: envData["status"] as? String ?? ""
+            )
+            return WelcomeMessage(
+                message: json["message"] as? String ?? "",
+                environment: environment
+            )
+            
+        case "error":
+            return ErrorMessage(message: json["message"] as? String ?? "Unknown error")
+            
+        case "pong":
+            // Handle keepalive response
+            return PongMessage()
+            
+        case "log":
+            return LogMessage(
+                timestamp: json["timestamp"] as? String ?? "",
+                level: json["level"] as? String ?? "info",
+                message: json["message"] as? String ?? ""
+            )
+            
+        default:
+            return UnknownMessage(type: type, data: json)
+        }
+    }
+    
+    private func handleError(_ error: Error) {
+        DispatchQueue.main.async {
+            self.connectionState = .error(error)
+        }
+        scheduleReconnect()
+    }
+    
+    private func scheduleReconnect() {
+        guard reconnectAttempts < maxReconnectAttempts else {
+            print("Max reconnection attempts reached")
+            return
+        }
+        
+        let delay = pow(2.0, Double(reconnectAttempts))
+        reconnectAttempts += 1
+        
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            self?.connect()
+        }
+    }
+    
+    private func startPingTimer() {
+        pingTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+            self?.sendPing()
+        }
+    }
+    
+    private func stopPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = nil
+    }
+    
+    private func stopReconnectTimer() {
+        reconnectTimer?.invalidate()
+        reconnectTimer = nil
+    }
+}
+
+extension DevPocketWebSocket: URLSessionWebSocketDelegate {
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        DispatchQueue.main.async {
+            self.connectionState = .connected
+            self.reconnectAttempts = 0
+        }
+        startPingTimer()
+    }
+    
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        stopPingTimer()
+        DispatchQueue.main.async {
+            self.connectionState = .disconnected
+        }
+        
+        if closeCode != .goingAway {
+            scheduleReconnect()
         }
     }
 }
 
-extension TerminalWebSocket: URLSessionWebSocketDelegate {
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        print("WebSocket connected")
-    }
-    
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        onDisconnect?()
-    }
+// Additional message types
+struct PongMessage: WebSocketMessage {
+    let type = "pong"
+}
+
+struct LogMessage: WebSocketMessage {
+    let type = "log"
+    let timestamp: String
+    let level: String
+    let message: String
+}
+
+struct UnknownMessage: WebSocketMessage {
+    let type: String
+    let data: [String: Any]
+}
+
+enum WebSocketError: Error {
+    case authenticationFailed
+    case connectionFailed
+    case invalidMessage
 }
 ```
 
-**Android (Kotlin) - WebSocket Client:**
+**Android (Kotlin) - Enhanced WebSocket Client:**
 ```kotlin
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import okhttp3.*
-import okio.ByteString
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
-class TerminalWebSocket(
+sealed class WebSocketMessage(val type: String)
+
+data class TerminalOutputMessage(
+    val data: String
+) : WebSocketMessage("output")
+
+data class WelcomeMessage(
+    val message: String,
+    val environment: EnvironmentInfo
+) : WebSocketMessage("welcome")
+
+data class ErrorMessage(
+    val message: String
+) : WebSocketMessage("error")
+
+data class LogMessage(
+    val timestamp: String,
+    val level: String,
+    val message: String
+) : WebSocketMessage("log")
+
+class PongMessage : WebSocketMessage("pong")
+
+data class EnvironmentInfo(
+    val id: String,
+    val name: String,
+    val template: String,
+    val status: String
+)
+
+enum class ConnectionState {
+    DISCONNECTED,
+    CONNECTING,
+    CONNECTED,
+    ERROR
+}
+
+sealed class WebSocketType {
+    data class Terminal(val environmentId: String) : WebSocketType()
+    data class Logs(val environmentId: String, val follow: Boolean = true) : WebSocketType()
+}
+
+class DevPocketWebSocket(
     private val context: Context,
-    private val environmentId: String
+    private val wsType: WebSocketType
 ) {
     private var webSocket: WebSocket? = null
-    private val client = OkHttpClient()
     private val tokenManager = TokenManager(context)
+    private val handler = Handler(Looper.getMainLooper())
+    private var pingRunnable: Runnable? = null
+    private var reconnectRunnable: Runnable? = null
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 5
     
-    var onReceiveData: ((String) -> Unit)? = null
-    var onError: ((Throwable) -> Unit)? = null
-    var onConnect: (() -> Unit)? = null
-    var onDisconnect: (() -> Unit)? = null
+    private val client = OkHttpClient.Builder()
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+    
+    private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    
+    private val _messages = MutableSharedFlow<WebSocketMessage>()
+    val messages: SharedFlow<WebSocketMessage> = _messages.asSharedFlow()
+    
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     fun connect() {
-        val token = tokenManager.getToken("access_token") ?: return
-        val url = "wss://api.devpocket.io/api/v1/ws/terminal/$environmentId?token=$token"
+        if (_connectionState.value == ConnectionState.CONNECTING) return
         
-        val request = Request.Builder()
-            .url(url)
-            .build()
+        _connectionState.value = ConnectionState.CONNECTING
+        
+        val token = tokenManager.getToken("access_token")
+        if (token == null) {
+            _connectionState.value = ConnectionState.ERROR
+            return
+        }
+        
+        val url = buildWebSocketURL(token)
+        val request = Request.Builder().url(url).build()
         
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                onConnect?.invoke()
+                _connectionState.value = ConnectionState.CONNECTED
+                reconnectAttempts = 0
+                startPingTimer()
             }
             
             override fun onMessage(webSocket: WebSocket, text: String) {
-                try {
-                    val json = JSONObject(text)
-                    if (json.getString("type") == "output") {
-                        val data = json.getString("data")
-                        onReceiveData?.invoke(data)
-                    }
-                } catch (e: Exception) {
-                    onError?.invoke(e)
-                }
+                handleMessage(text)
             }
             
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                onError?.invoke(t)
+                _connectionState.value = ConnectionState.ERROR
+                stopPingTimer()
+                scheduleReconnect()
             }
             
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                onDisconnect?.invoke()
+                _connectionState.value = ConnectionState.DISCONNECTED
+                stopPingTimer()
+                
+                if (code != 1000) { // Not normal closure
+                    scheduleReconnect()
+                }
             }
         })
     }
     
-    fun send(command: String) {
-        val message = JSONObject().apply {
-            put("type", "input")
-            put("data", command)
+    private fun buildWebSocketURL(token: String): String {
+        val baseUrl = "wss://api.devpocket.io/api/v1/ws"
+        return when (wsType) {
+            is WebSocketType.Terminal -> 
+                "$baseUrl/terminal/${wsType.environmentId}?token=$token"
+            is WebSocketType.Logs -> 
+                "$baseUrl/logs/${wsType.environmentId}?token=$token&follow=${wsType.follow}"
         }
-        webSocket?.send(message.toString())
     }
     
-    fun resize(cols: Int, rows: Int) {
-        val message = JSONObject().apply {
+    private fun handleMessage(text: String) {
+        scope.launch {
+            try {
+                val json = JSONObject(text)
+                val type = json.getString("type")
+                
+                val message = when (type) {
+                    "output" -> TerminalOutputMessage(
+                        data = json.optString("data", "")
+                    )
+                    
+                    "welcome" -> {
+                        val envJson = json.optJSONObject("environment")
+                        val environment = EnvironmentInfo(
+                            id = envJson?.optString("id") ?: "",
+                            name = envJson?.optString("name") ?: "",
+                            template = envJson?.optString("template") ?: "",
+                            status = envJson?.optString("status") ?: ""
+                        )
+                        WelcomeMessage(
+                            message = json.optString("message", ""),
+                            environment = environment
+                        )
+                    }
+                    
+                    "error" -> ErrorMessage(
+                        message = json.optString("message", "Unknown error")
+                    )
+                    
+                    "log" -> LogMessage(
+                        timestamp = json.optString("timestamp", ""),
+                        level = json.optString("level", "info"),
+                        message = json.optString("message", "")
+                    )
+                    
+                    "pong" -> PongMessage()
+                    
+                    else -> return@launch // Ignore unknown message types
+                }
+                
+                _messages.emit(message)
+            } catch (e: Exception) {
+                // Log error but don't crash
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    fun sendTerminalInput(command: String) {
+        sendMessage(JSONObject().apply {
+            put("type", "input")
+            put("data", command)
+        })
+    }
+    
+    fun resizeTerminal(cols: Int, rows: Int) {
+        sendMessage(JSONObject().apply {
             put("type", "resize")
             put("cols", cols)
             put("rows", rows)
-        }
+        })
+    }
+    
+    fun sendPing() {
+        sendMessage(JSONObject().apply {
+            put("type", "ping")
+        })
+    }
+    
+    private fun sendMessage(message: JSONObject) {
         webSocket?.send(message.toString())
     }
     
+    private fun scheduleReconnect() {
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            return
+        }
+        
+        val delay = (2.0.pow(reconnectAttempts) * 1000).toLong()
+        reconnectAttempts++
+        
+        reconnectRunnable = Runnable {
+            connect()
+        }
+        
+        handler.postDelayed(reconnectRunnable!!, delay)
+    }
+    
+    private fun startPingTimer() {
+        stopPingTimer()
+        pingRunnable = object : Runnable {
+            override fun run() {
+                sendPing()
+                handler.postDelayed(this, 30000) // 30 seconds
+            }
+        }
+        handler.postDelayed(pingRunnable!!, 30000)
+    }
+    
+    private fun stopPingTimer() {
+        pingRunnable?.let {
+            handler.removeCallbacks(it)
+            pingRunnable = null
+        }
+    }
+    
+    private fun stopReconnectTimer() {
+        reconnectRunnable?.let {
+            handler.removeCallbacks(it)
+            reconnectRunnable = null
+        }
+    }
+    
     fun disconnect() {
+        stopPingTimer()
+        stopReconnectTimer()
         webSocket?.close(1000, "User disconnected")
+        _connectionState.value = ConnectionState.DISCONNECTED
+        scope.cancel()
+    }
+}
+
+// Usage example for terminal
+class TerminalWebSocketManager(context: Context, environmentId: String) {
+    private val webSocket = DevPocketWebSocket(
+        context, 
+        WebSocketType.Terminal(environmentId)
+    )
+    
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    
+    fun startTerminalSession(
+        onOutput: (String) -> Unit,
+        onConnectionChange: (ConnectionState) -> Unit,
+        onWelcome: (WelcomeMessage) -> Unit
+    ) {
+        // Collect connection state changes
+        scope.launch {
+            webSocket.connectionState.collect { state ->
+                onConnectionChange(state)
+            }
+        }
+        
+        // Collect messages
+        scope.launch {
+            webSocket.messages.collect { message ->
+                when (message) {
+                    is TerminalOutputMessage -> onOutput(message.data)
+                    is WelcomeMessage -> onWelcome(message)
+                    is ErrorMessage -> {
+                        // Handle error
+                        println("Terminal error: ${message.message}")
+                    }
+                    else -> {
+                        // Handle other message types
+                    }
+                }
+            }
+        }
+        
+        webSocket.connect()
+    }
+    
+    fun sendCommand(command: String) {
+        webSocket.sendTerminalInput(command)
+    }
+    
+    fun resizeTerminal(cols: Int, rows: Int) {
+        webSocket.resizeTerminal(cols, rows)
+    }
+    
+    fun disconnect() {
+        webSocket.disconnect()
+        scope.cancel()
+    }
+}
+
+// Usage example for logs
+class LogsWebSocketManager(context: Context, environmentId: String) {
+    private val webSocket = DevPocketWebSocket(
+        context,
+        WebSocketType.Logs(environmentId, follow = true)
+    )
+    
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    
+    fun startLogStream(
+        onLog: (LogMessage) -> Unit,
+        onConnectionChange: (ConnectionState) -> Unit
+    ) {
+        scope.launch {
+            webSocket.connectionState.collect { state ->
+                onConnectionChange(state)
+            }
+        }
+        
+        scope.launch {
+            webSocket.messages.collect { message ->
+                when (message) {
+                    is LogMessage -> onLog(message)
+                    is ErrorMessage -> {
+                        println("Log stream error: ${message.message}")
+                    }
+                    else -> {
+                        // Handle other message types
+                    }
+                }
+            }
+        }
+        
+        webSocket.connect()
+    }
+    
+    fun disconnect() {
+        webSocket.disconnect()
+        scope.cancel()
     }
 }
 ```
@@ -900,41 +1472,829 @@ curl -X POST http://localhost:8000/api/v1/environments \
 
 ### WebSocket Testing
 
-You can test WebSocket connections using `wscat`:
-
+**Command Line Testing with wscat:**
 ```bash
 npm install -g wscat
 
-# Connect to WebSocket
+# Test terminal WebSocket
 wscat -c "ws://localhost:8000/api/v1/ws/terminal/<environment-id>?token=<jwt-token>"
 
-# Send commands
+# Test commands:
 > {"type": "input", "data": "ls -la\n"}
+> {"type": "resize", "cols": 80, "rows": 24}
+> {"type": "ping"}
+
+# Test log streaming WebSocket
+wscat -c "ws://localhost:8000/api/v1/ws/logs/<environment-id>?token=<jwt-token>&follow=true"
+```
+
+**Advanced Testing with Node.js:**
+```javascript
+const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
+
+class WebSocketTester {
+    constructor(baseUrl, token) {
+        this.baseUrl = baseUrl;
+        this.token = token;
+    }
+    
+    async testTerminalConnection(environmentId) {
+        return new Promise((resolve, reject) => {
+            const ws = new WebSocket(`${this.baseUrl}/api/v1/ws/terminal/${environmentId}?token=${this.token}`);
+            const timeout = setTimeout(() => {
+                ws.close();
+                reject(new Error('Connection timeout'));
+            }, 5000);
+            
+            ws.on('open', () => {
+                clearTimeout(timeout);
+                console.log('Terminal WebSocket connected');
+                
+                // Send test ping
+                ws.send(JSON.stringify({ type: 'ping' }));
+            });
+            
+            ws.on('message', (data) => {
+                const message = JSON.parse(data.toString());
+                console.log('Received:', message);
+                
+                if (message.type === 'welcome') {
+                    console.log('Welcome message received:', message.environment);
+                } else if (message.type === 'pong') {
+                    console.log('Ping/pong successful');
+                    ws.close();
+                    resolve(true);
+                }
+            });
+            
+            ws.on('error', (error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+            
+            ws.on('close', (code, reason) => {
+                console.log(`Connection closed: ${code} - ${reason}`);
+            });
+        });
+    }
+    
+    async testLogStreaming(environmentId) {
+        return new Promise((resolve, reject) => {
+            const ws = new WebSocket(`${this.baseUrl}/api/v1/ws/logs/${environmentId}?token=${this.token}&follow=true`);
+            let logCount = 0;
+            
+            const timeout = setTimeout(() => {
+                ws.close();
+                resolve(logCount > 0);
+            }, 10000);
+            
+            ws.on('message', (data) => {
+                const message = JSON.parse(data.toString());
+                if (message.type === 'log') {
+                    logCount++;
+                    console.log(`Log ${logCount}:`, message.message);
+                }
+            });
+            
+            ws.on('error', (error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+        });
+    }
+}
+
+// Usage
+async function runTests() {
+    const tester = new WebSocketTester('ws://localhost:8000', 'your-jwt-token');
+    
+    try {
+        await tester.testTerminalConnection('environment-id');
+        console.log('Terminal test passed');
+        
+        await tester.testLogStreaming('environment-id');
+        console.log('Log streaming test passed');
+    } catch (error) {
+        console.error('Test failed:', error);
+    }
+}
+
+runTests();
+```
+
+**Load Testing with Artillery:**
+```yaml
+# artillery-websocket-test.yml
+config:
+  target: 'ws://localhost:8000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+  variables:
+    jwt_token: 'your-jwt-token'
+    environment_id: 'test-environment'
+      
+scenarios:
+  - name: "Terminal WebSocket Load Test"
+    weight: 70
+    engine: ws
+    beforeRequest: "setAuthToken"
+    flow:
+      - connect:
+          url: "/api/v1/ws/terminal/{{ environment_id }}?token={{ jwt_token }}"
+      - send:
+          payload:
+            type: "ping"
+      - wait: 1
+      - send:
+          payload:
+            type: "input"
+            data: "echo 'load test'\n"
+      - wait: 2
+      - disconnect
+      
+  - name: "Log Streaming Load Test"
+    weight: 30
+    engine: ws
+    flow:
+      - connect:
+          url: "/api/v1/ws/logs/{{ environment_id }}?token={{ jwt_token }}&follow=true"
+      - wait: 5
+      - disconnect
+```
+
+**Performance Monitoring:**
+```javascript
+class WebSocketMonitor {
+    constructor() {
+        this.metrics = {
+            connectionsOpened: 0,
+            connectionsClosed: 0,
+            messagesReceived: 0,
+            messagesSent: 0,
+            errors: 0,
+            avgLatency: 0,
+            latencyMeasurements: []
+        };
+    }
+    
+    startMonitoring(ws) {
+        ws.on('open', () => {
+            this.metrics.connectionsOpened++;
+            console.log('Metrics:', this.metrics);
+        });
+        
+        ws.on('close', () => {
+            this.metrics.connectionsClosed++;
+        });
+        
+        ws.on('message', () => {
+            this.metrics.messagesReceived++;
+        });
+        
+        ws.on('error', () => {
+            this.metrics.errors++;
+        });
+    }
+    
+    measureLatency(ws) {
+        const start = Date.now();
+        ws.send(JSON.stringify({ type: 'ping', timestamp: start }));
+        
+        ws.on('message', (data) => {
+            const message = JSON.parse(data.toString());
+            if (message.type === 'pong' && message.timestamp) {
+                const latency = Date.now() - message.timestamp;
+                this.metrics.latencyMeasurements.push(latency);
+                this.updateAverageLatency();
+            }
+        });
+    }
+    
+    updateAverageLatency() {
+        const measurements = this.metrics.latencyMeasurements;
+        this.metrics.avgLatency = measurements.reduce((a, b) => a + b, 0) / measurements.length;
+    }
+}
+```
+
+## WebSocket Message Handling Best Practices
+
+### Message Queuing for Offline Support
+
+**iOS (Swift):**
+```swift
+class MessageQueue {
+    private var pendingMessages: [WebSocketMessage] = []
+    private let maxQueueSize = 100
+    
+    func enqueue(_ message: WebSocketMessage) {
+        if pendingMessages.count >= maxQueueSize {
+            pendingMessages.removeFirst()
+        }
+        pendingMessages.append(message)
+    }
+    
+    func flush(to webSocket: DevPocketWebSocket) {
+        pendingMessages.forEach { message in
+            webSocket.send(message)
+        }
+        pendingMessages.removeAll()
+    }
+    
+    var count: Int {
+        return pendingMessages.count
+    }
+}
+```
+
+**Android (Kotlin):**
+```kotlin
+class MessageQueue {
+    private val pendingMessages = mutableListOf<WebSocketMessage>()
+    private val maxQueueSize = 100
+    
+    fun enqueue(message: WebSocketMessage) {
+        if (pendingMessages.size >= maxQueueSize) {
+            pendingMessages.removeAt(0)
+        }
+        pendingMessages.add(message)
+    }
+    
+    fun flush(webSocket: DevPocketWebSocket) {
+        pendingMessages.forEach { message ->
+            webSocket.send(message)
+        }
+        pendingMessages.clear()
+    }
+    
+    val count: Int get() = pendingMessages.size
+}
+```
+
+### Connection Health Monitoring
+
+**iOS (Swift):**
+```swift
+class ConnectionHealthMonitor {
+    private var lastPongReceived: Date?
+    private var pingInterval: TimeInterval = 30.0
+    private var timeoutInterval: TimeInterval = 10.0
+    
+    func recordPongReceived() {
+        lastPongReceived = Date()
+    }
+    
+    func isConnectionHealthy() -> Bool {
+        guard let lastPong = lastPongReceived else {
+            return false
+        }
+        return Date().timeIntervalSince(lastPong) < (pingInterval + timeoutInterval)
+    }
+    
+    func shouldReconnect() -> Bool {
+        return !isConnectionHealthy()
+    }
+}
+```
+
+**Android (Kotlin):**
+```kotlin
+class ConnectionHealthMonitor {
+    private var lastPongReceived: Long = 0
+    private val pingInterval = 30_000L // 30 seconds
+    private val timeoutInterval = 10_000L // 10 seconds
+    
+    fun recordPongReceived() {
+        lastPongReceived = System.currentTimeMillis()
+    }
+    
+    fun isConnectionHealthy(): Boolean {
+        if (lastPongReceived == 0L) return false
+        return System.currentTimeMillis() - lastPongReceived < (pingInterval + timeoutInterval)
+    }
+    
+    fun shouldReconnect(): Boolean {
+        return !isConnectionHealthy()
+    }
+}
+```
+
+## Advanced WebSocket Features
+
+### Binary Data Transmission
+
+For file transfers or binary data:
+
+**iOS (Swift):**
+```swift
+extension DevPocketWebSocket {
+    func sendBinaryData(_ data: Data) {
+        webSocket?.send(.data(data)) { error in
+            if let error = error {
+                print("Binary send error: \(error)")
+            }
+        }
+    }
+    
+    private func handleBinaryMessage(_ data: Data) {
+        // Handle binary data (file chunks, images, etc.)
+        // Emit through a separate binary data stream
+        binaryDataSubject.send(data)
+    }
+}
+```
+
+**Android (Kotlin):**
+```kotlin
+fun sendBinaryData(data: ByteArray) {
+    webSocket?.send(ByteString.of(*data))
+}
+
+private fun handleBinaryMessage(bytes: ByteString) {
+    // Handle binary data
+    _binaryData.emit(bytes.toByteArray())
+}
+```
+
+### WebSocket Subprotocol Support
+
+**iOS (Swift):**
+```swift
+func connectWithSubprotocol(_ subprotocol: String) {
+    var request = URLRequest(url: url)
+    request.setValue(subprotocol, forHTTPHeaderField: "Sec-WebSocket-Protocol")
+    
+    webSocket = urlSession.webSocketTask(with: request)
+    webSocket?.resume()
+}
+```
+
+**Android (Kotlin):**
+```kotlin
+fun connectWithSubprotocol(subprotocol: String) {
+    val request = Request.Builder()
+        .url(url)
+        .addHeader("Sec-WebSocket-Protocol", subprotocol)
+        .build()
+    
+    webSocket = client.newWebSocket(request, listener)
+}
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Connection Issues Diagnostic
+
+**Diagnostic Checklist:**
+1. **Network Connectivity**
+   - Test basic internet connectivity
+   - Check if API endpoint is reachable
+   - Verify DNS resolution
+
+2. **Authentication**
+   - Validate JWT token format
+   - Check token expiration
+   - Verify token permissions
+
+3. **WebSocket Specific**
+   - Test WebSocket endpoint accessibility
+   - Check for proxy/firewall blocking
+   - Verify WebSocket protocol version support
+
+**iOS Diagnostic Implementation:**
+```swift
+struct DiagnosticResult {
+    let test: String
+    let passed: Bool
+    let details: String?
+}
+
+class WebSocketDiagnostics {
+    static func runDiagnostics(for environmentId: String) async -> [DiagnosticResult] {
+        var results: [DiagnosticResult] = []
+        
+        // Test 1: Network connectivity
+        do {
+            let (_, response) = try await URLSession.shared.data(from: URL(string: "https://api.devpocket.io/health")!)
+            let httpResponse = response as! HTTPURLResponse
+            results.append(DiagnosticResult(
+                test: "Network Connectivity",
+                passed: httpResponse.statusCode == 200,
+                details: "Status: \(httpResponse.statusCode)"
+            ))
+        } catch {
+            results.append(DiagnosticResult(
+                test: "Network Connectivity",
+                passed: false,
+                details: error.localizedDescription
+            ))
+        }
+        
+        // Test 2: Token validation
+        if let token = TokenManager.getToken(for: "access_token") {
+            // Parse JWT to check expiration
+            let parts = token.components(separatedBy: ".")
+            if parts.count == 3 {
+                if let data = Data(base64Encoded: parts[1].padding(toLength: ((parts[1].count + 3) / 4) * 4, withPad: "=", startingAt: 0)),
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let exp = json["exp"] as? TimeInterval {
+                    let isValid = Date().timeIntervalSince1970 < exp
+                    results.append(DiagnosticResult(
+                        test: "Token Validity",
+                        passed: isValid,
+                        details: isValid ? "Valid" : "Expired"
+                    ))
+                }
+            }
+        } else {
+            results.append(DiagnosticResult(
+                test: "Token Availability",
+                passed: false,
+                details: "No token found"
+            ))
+        }
+        
+        // Test 3: WebSocket connection
+        do {
+            let testWS = DevPocketWebSocket(type: .terminal(environmentId))
+            await testWS.connect()
+            
+            // Wait for connection or timeout
+            try await withTimeout(5.0) {
+                while testWS.connectionState != .connected {
+                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+                }
+            }
+            
+            testWS.disconnect()
+            
+            results.append(DiagnosticResult(
+                test: "WebSocket Connection",
+                passed: true,
+                details: "Connection successful"
+            ))
+        } catch {
+            results.append(DiagnosticResult(
+                test: "WebSocket Connection",
+                passed: false,
+                details: error.localizedDescription
+            ))
+        }
+        
+        return results
+    }
+}
+```
+
+**Android Diagnostic Implementation:**
+```kotlin
+data class DiagnosticResult(
+    val test: String,
+    val passed: Boolean,
+    val details: String?
+)
+
+class WebSocketDiagnostics {
+    companion object {
+        suspend fun runDiagnostics(environmentId: String): List<DiagnosticResult> {
+            val results = mutableListOf<DiagnosticResult>()
+            
+            // Test 1: Network connectivity
+            try {
+                val response = OkHttpClient().newCall(
+                    Request.Builder()
+                        .url("https://api.devpocket.io/health")
+                        .build()
+                ).execute()
+                
+                results.add(DiagnosticResult(
+                    test = "Network Connectivity",
+                    passed = response.isSuccessful,
+                    details = "Status: ${response.code}"
+                ))
+            } catch (e: Exception) {
+                results.add(DiagnosticResult(
+                    test = "Network Connectivity",
+                    passed = false,
+                    details = e.message
+                ))
+            }
+            
+            // Test 2: Token validation
+            val tokenManager = TokenManager(context)
+            val token = tokenManager.getToken("access_token")
+            
+            if (token != null) {
+                try {
+                    val parts = token.split(".")
+                    if (parts.size == 3) {
+                        val payload = String(Base64.decode(parts[1], Base64.DEFAULT))
+                        val json = JSONObject(payload)
+                        val exp = json.getLong("exp")
+                        val isValid = System.currentTimeMillis() / 1000 < exp
+                        
+                        results.add(DiagnosticResult(
+                            test = "Token Validity",
+                            passed = isValid,
+                            details = if (isValid) "Valid" else "Expired"
+                        ))
+                    }
+                } catch (e: Exception) {
+                    results.add(DiagnosticResult(
+                        test = "Token Validity",
+                        passed = false,
+                        details = "Invalid token format"
+                    ))
+                }
+            } else {
+                results.add(DiagnosticResult(
+                    test = "Token Availability",
+                    passed = false,
+                    details = "No token found"
+                ))
+            }
+            
+            // Test 3: WebSocket connection
+            try {
+                val testWS = DevPocketWebSocket(context, WebSocketType.Terminal(environmentId))
+                testWS.connect()
+                
+                // Wait for connection with timeout
+                withTimeoutOrNull(5000) {
+                    while (testWS.connectionState.value != ConnectionState.CONNECTED) {
+                        delay(100)
+                    }
+                }
+                
+                testWS.disconnect()
+                
+                results.add(DiagnosticResult(
+                    test = "WebSocket Connection",
+                    passed = true,
+                    details = "Connection successful"
+                ))
+            } catch (e: Exception) {
+                results.add(DiagnosticResult(
+                    test = "WebSocket Connection",
+                    passed = false,
+                    details = e.message
+                ))
+            }
+            
+            return results
+        }
+    }
+}
+```
+
+### Common Issues and Solutions
 
 1. **Token Expired**
-   - Solution: Implement automatic token refresh
-   - Use refresh token to get new access token
+   - **Symptoms:** WebSocket closes with code 1008, "Authentication failed"
+   - **Solution:** Implement automatic token refresh before WebSocket connection
+   ```swift
+   func connectWithTokenRefresh() async {
+       if await !isTokenValid() {
+           await refreshToken()
+       }
+       connect()
+   }
+   ```
 
 2. **WebSocket Connection Drops**
-   - Solution: Implement reconnection logic with exponential backoff
-   - Check network connectivity before reconnecting
+   - **Symptoms:** Frequent disconnections, connection state changes
+   - **Solution:** Implement exponential backoff reconnection
+   ```swift
+   private func scheduleReconnect() {
+       let delay = min(pow(2.0, Double(reconnectAttempts)), 60.0)
+       DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+           self.connect()
+       }
+   }
+   ```
 
 3. **Rate Limiting**
-   - Solution: Implement request queuing
-   - Show user-friendly message with retry time
+   - **Symptoms:** Error messages about rate limits
+   - **Solution:** Implement message throttling
+   ```swift
+   class MessageThrottle {
+       private var lastMessageTime: Date = Date()
+       private let minInterval: TimeInterval = 0.1
+       
+       func canSendMessage() -> Bool {
+           let now = Date()
+           if now.timeIntervalSince(lastMessageTime) >= minInterval {
+               lastMessageTime = now
+               return true
+           }
+           return false
+       }
+   }
+   ```
 
 4. **SSL Certificate Issues**
-   - Solution: Ensure proper certificate validation
-   - Use certificate pinning in production
+   - **Symptoms:** Connection fails with SSL errors
+   - **Solution:** Implement certificate pinning
+   ```swift
+   class CertificatePinner: NSURLSessionDelegate {
+       func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+           // Implement certificate validation
+       }
+   }
+   ```
+
+5. **Memory Leaks**
+   - **Symptoms:** App memory usage increases over time
+   - **Solution:** Proper cleanup and weak references
+   ```swift
+   class WebSocketManager {
+       weak var delegate: WebSocketDelegate?
+       
+       deinit {
+           disconnect()
+           // Clean up all references
+       }
+   }
+   ```
+
+## Performance Optimization
+
+### Connection Pooling
+```swift
+class WebSocketConnectionPool {
+    private var connections: [String: DevPocketWebSocket] = [:]
+    private let maxConnections = 10
+    
+    func getConnection(for environmentId: String) -> DevPocketWebSocket {
+        if let existing = connections[environmentId] {
+            return existing
+        }
+        
+        // Clean up old connections if at limit
+        if connections.count >= maxConnections {
+            let oldestKey = connections.keys.first!
+            connections[oldestKey]?.disconnect()
+            connections.removeValue(forKey: oldestKey)
+        }
+        
+        let newConnection = DevPocketWebSocket(type: .terminal(environmentId))
+        connections[environmentId] = newConnection
+        return newConnection
+    }
+    
+    func closeAll() {
+        connections.values.forEach { $0.disconnect() }
+        connections.removeAll()
+    }
+}
+```
+
+### Message Batching
+```kotlin
+class MessageBatcher {
+    private val batchSize = 10
+    private val batchTimeout = 100L // milliseconds
+    private val pendingMessages = mutableListOf<String>()
+    private var batchTimer: Timer? = null
+    
+    fun addMessage(message: String, webSocket: DevPocketWebSocket) {
+        synchronized(pendingMessages) {
+            pendingMessages.add(message)
+            
+            if (pendingMessages.size >= batchSize) {
+                flushBatch(webSocket)
+            } else {
+                scheduleBatchFlush(webSocket)
+            }
+        }
+    }
+    
+    private fun scheduleBatchFlush(webSocket: DevPocketWebSocket) {
+        batchTimer?.cancel()
+        batchTimer = Timer().apply {
+            schedule(batchTimeout) {
+                flushBatch(webSocket)
+            }
+        }
+    }
+    
+    private fun flushBatch(webSocket: DevPocketWebSocket) {
+        synchronized(pendingMessages) {
+            if (pendingMessages.isNotEmpty()) {
+                val batch = pendingMessages.joinToString("\n")
+                webSocket.send(batch)
+                pendingMessages.clear()
+            }
+            batchTimer?.cancel()
+        }
+    }
+}
+```
+
+## Security Considerations
+
+### Certificate Pinning
+```swift
+class SecureWebSocketDelegate: NSURLSessionDelegate {
+    private let pinnedCertificates: [SecCertificate]
+    
+    init(pinnedCertificates: [SecCertificate]) {
+        self.pinnedCertificates = pinnedCertificates
+    }
+    
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        
+        guard let serverTrust = challenge.protectionSpace.serverTrust,
+              let serverCertificate = SecTrustGetCertificateAtIndex(serverTrust, 0) else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
+            return
+        }
+        
+        let serverCertData = SecCertificateCopyData(serverCertificate)
+        
+        for pinnedCert in pinnedCertificates {
+            let pinnedCertData = SecCertificateCopyData(pinnedCert)
+            if CFEqual(serverCertData, pinnedCertData) {
+                completionHandler(.useCredential, URLCredential(trust: serverTrust))
+                return
+            }
+        }
+        
+        completionHandler(.cancelAuthenticationChallenge, nil)
+    }
+}
+```
+
+### Token Security
+```kotlin
+class SecureTokenManager(context: Context) {
+    private val keyAlias = "DevPocketWebSocketKey"
+    private val keyStore = AndroidKeyStore()
+    
+    init {
+        generateSecretKey()
+    }
+    
+    private fun generateSecretKey() {
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        
+        val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+            keyAlias,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        )
+        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+        .setUserAuthenticationRequired(true)
+        .setUserAuthenticationValidityDurationSeconds(300)
+        .build()
+        
+        keyGenerator.init(keyGenParameterSpec)
+        keyGenerator.generateKey()
+    }
+    
+    fun encryptToken(token: String): String {
+        val secretKey = keyStore.getKey(keyAlias, null) as SecretKey
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        
+        val encryptedData = cipher.doFinal(token.toByteArray())
+        val iv = cipher.iv
+        
+        return Base64.encodeToString(iv + encryptedData, Base64.DEFAULT)
+    }
+    
+    fun decryptToken(encryptedToken: String): String {
+        val data = Base64.decode(encryptedToken, Base64.DEFAULT)
+        val iv = data.sliceArray(0..11)
+        val encryptedData = data.sliceArray(12 until data.size)
+        
+        val secretKey = keyStore.getKey(keyAlias, null) as SecretKey
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        
+        val spec = GCMParameterSpec(128, iv)
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+        
+        val decryptedData = cipher.doFinal(encryptedData)
+        return String(decryptedData)
+    }
+}
+```
 
 ## Support
 
 For additional support or questions:
 - API Documentation: http://localhost:8000/docs
+- WebSocket Testing Tool: https://devpocket.io/ws-test
 - GitHub Issues: https://github.com/devpocket/mobile-sdk/issues
+- Community Discord: https://discord.gg/devpocket
 - Email: support@devpocket.io
+
+### Emergency Debugging
+If experiencing critical WebSocket issues in production:
+1. Enable debug logging: Set environment variable `WEBSOCKET_DEBUG=true`
+2. Collect diagnostic information using the diagnostic tools provided
+3. Check server logs for rate limiting or authentication errors
+4. Verify network connectivity and proxy configurations
+5. Test with a minimal WebSocket client to isolate issues

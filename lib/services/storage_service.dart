@@ -57,7 +57,7 @@ class StorageService {
     try {
       final userJson = jsonEncode(user.toJson());
       await _storage.write(key: AppConstants.userKey, value: userJson);
-      _logger.i('User data saved successfully');
+      _logger.i('User data saved successfully - User: ${user.email} (ID: ${user.id})');
     } catch (e, stackTrace) {
       _logger.e('Failed to save user data', error: e, stackTrace: stackTrace);
       rethrow;
