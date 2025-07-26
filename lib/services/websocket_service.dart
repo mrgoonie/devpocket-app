@@ -47,8 +47,9 @@ class WebSocketService {
         throw Exception('No authentication token available');
       }
 
-      final uri = Uri.parse(
-          '${AppConstants.wsBaseUrl}/api/v1/ws/terminal/$environmentId?token=$token');
+      // Build the WebSocket URI correctly
+      final wsUrl = '${AppConstants.wsBaseUrl}/api/v1/ws/terminal/$environmentId?token=$token';
+      final uri = Uri.parse(wsUrl);
 
       _channel = WebSocketChannel.connect(uri);
 
