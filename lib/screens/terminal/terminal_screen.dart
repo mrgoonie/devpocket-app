@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:xterm/xterm.dart';
 import '../../config/theme.dart';
 import '../../models/environment.dart';
 import '../../models/enums.dart';
@@ -19,7 +20,8 @@ class TerminalScreen extends StatefulWidget {
 class _TerminalScreenState extends State<TerminalScreen>
     with AutomaticKeepAliveClientMixin {
   late TerminalProvider _terminalProvider;
-  final FocusNode _inputFocusNode = FocusNode();
+  Terminal? _terminal;
+  TerminalController? _terminalController;
   String? _currentEnvironmentId;
 
   @override
@@ -29,11 +31,35 @@ class _TerminalScreenState extends State<TerminalScreen>
   void initState() {
     super.initState();
     _terminalProvider = context.read<TerminalProvider>();
+    _initializeTerminal();
+  }
+
+  void _initializeTerminal() {
+    _terminal = Terminal(
+      maxLines: 10000,
+    );
+    
+    _terminalController = TerminalController();
+    
+    // Handle terminal input - send data directly to WebSocket
+    _terminal!.onOutput = (data) {
+      _terminalProvider.sendDirectInput(data);
+    };
+    
+    // Handle terminal resize
+    _terminal!.onResize = (width, height, pixelWidth, pixelHeight) {
+      _terminalProvider.resizeTerminal(width, height);
+    };
+    
+    // Listen to WebSocket output and write to terminal
+    _terminalProvider.terminalDataStream.listen((data) {
+      _terminal?.write(data);
+    });
   }
 
   @override
   void dispose() {
-    _inputFocusNode.dispose();
+    _terminal?.buffer.clear();
     super.dispose();
   }
 
@@ -48,7 +74,11 @@ class _TerminalScreenState extends State<TerminalScreen>
 
     _currentEnvironmentId = environment.id;
     
-    // Get access token
+    // Clear terminal and show connecting message
+    _terminal?.buffer.clear();
+    _terminal?.write('\x1b[32mConnecting to ${environment.name}...\x1b[0m\r\n');
+    
+    // Get access token and connect
     final accessToken = await StorageService.getAccessToken();
     if (accessToken != null) {
       await _terminalProvider.connectToEnvironment(environment.id, accessToken);
@@ -113,7 +143,8 @@ class _TerminalScreenState extends State<TerminalScreen>
               IconButton(
                 icon: const Icon(Icons.clear, color: Colors.white),
                 onPressed: () {
-                  _terminalProvider.clearTerminal();
+                  _terminal?.buffer.clear();
+                  _terminal?.write('\x1b[2J\x1b[H'); // Clear screen and move cursor to top
                 },
               ),
             ],
@@ -157,12 +188,8 @@ class _TerminalScreenState extends State<TerminalScreen>
                     : currentEnvironment.status != EnvironmentStatus.running
                         ? _buildEnvironmentNotRunningState(
                             currentEnvironment, environmentProvider)
-                        : _buildTerminalOutput(),
+                        : _buildTerminalView(),
               ),
-              
-              // Command Input (only show when environment is running)
-              if (currentEnvironment?.status == EnvironmentStatus.running)
-                _buildCommandInput(),
             ],
           ),
         );
@@ -170,94 +197,50 @@ class _TerminalScreenState extends State<TerminalScreen>
     );
   }
 
-  Widget _buildTerminalOutput() {
-    return Consumer<TerminalProvider>(
-      builder: (context, provider, child) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(8),
-          child: ListView.builder(
-            controller: provider.scrollController,
-            itemCount: provider.outputLines.length,
-            itemBuilder: (context, index) {
-              final line = provider.outputLines[index];
-              return SelectableText(
-                line,
-                style: const TextStyle(
-                  fontFamily: 'JetBrainsMono',
-                  fontSize: 14,
-                  color: Color(0xFF00FF41), // Neon green
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
+  Widget _buildTerminalView() {
+    if (_terminal == null || _terminalController == null) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppTheme.neonGreen,
+        ),
+      );
+    }
 
-  Widget _buildCommandInput() {
-    return Consumer<TerminalProvider>(
-      builder: (context, provider, child) {
-        return Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: Colors.grey[700]!),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Text(
-                '\$ ',
-                style: TextStyle(
-                  fontFamily: 'JetBrainsMono',
-                  fontSize: 16,
-                  color: Color(0xFF00FF41),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: provider.inputController,
-                  focusNode: _inputFocusNode,
-                  enabled: provider.isConnected,
-                  style: const TextStyle(
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: provider.isConnected 
-                      ? 'Enter command...' 
-                      : 'Not connected',
-                    hintStyle: TextStyle(color: Colors.grey[500]),
-                  ),
-                  onSubmitted: (command) {
-                    if (command.trim().isNotEmpty) {
-                      provider.sendCommand(command.trim());
-                    }
-                    _inputFocusNode.requestFocus();
-                  },
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Color(0xFF00FF41)),
-                onPressed: provider.isConnected
-                  ? () {
-                      final command = provider.inputController.text.trim();
-                      if (command.isNotEmpty) {
-                        provider.sendCommand(command);
-                      }
-                      _inputFocusNode.requestFocus();
-                    }
-                  : null,
-              ),
-            ],
-          ),
-        );
-      },
+    return Container(
+      color: Colors.black,
+      child: TerminalView(
+        _terminal!,
+        controller: _terminalController!,
+        textStyle: const TerminalStyle(
+          fontSize: 14,
+          fontFamily: 'JetBrainsMono',
+        ),
+        theme: TerminalTheme(
+          cursor: const Color(0xFF00FF41),
+          selection: const Color(0xFF444444),
+          foreground: const Color(0xFF00FF41),
+          background: Colors.black,
+          black: Colors.black,
+          red: const Color(0xFFFF0000),
+          green: const Color(0xFF00FF41),
+          yellow: const Color(0xFFFFFF00),
+          blue: const Color(0xFF0000FF),
+          magenta: const Color(0xFFFF00FF),
+          cyan: const Color(0xFF00FFFF),
+          white: Colors.white,
+          brightBlack: const Color(0xFF555555),
+          brightRed: const Color(0xFFFF5555),
+          brightGreen: const Color(0xFF55FF55),
+          brightYellow: const Color(0xFFFFFF55),
+          brightBlue: const Color(0xFF5555FF),
+          brightMagenta: const Color(0xFFFF55FF),
+          brightCyan: const Color(0xFF55FFFF),
+          brightWhite: Colors.white,
+          searchHitBackground: const Color(0xFFFFFF00),
+          searchHitBackgroundCurrent: const Color(0xFFFFAA00),
+          searchHitForeground: Colors.black,
+        ),
+      ),
     );
   }
 

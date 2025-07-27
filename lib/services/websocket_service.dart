@@ -78,6 +78,19 @@ class WebSocketTerminalService {
     _channel!.sink.add(json.encode(message));
   }
   
+  // Send raw input to terminal (for xterm integration)
+  void sendRawInput(String data) {
+    if (!_isConnected || _channel == null) return;
+    
+    final message = {
+      'type': 'input',
+      'data': data,
+    };
+    
+    print('Sending raw input: ${data.replaceAll('\n', '\\n')}');
+    _channel!.sink.add(json.encode(message));
+  }
+  
   // Send ping for connection health
   void sendPing() {
     if (!_isConnected || _channel == null) return;

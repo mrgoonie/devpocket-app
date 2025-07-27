@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/websocket_service.dart';
 import '../models/terminal_message.dart';
@@ -8,6 +9,9 @@ class TerminalProvider extends ChangeNotifier {
   final List<String> _outputLines = [];
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  
+  // Stream for direct terminal data (for xterm integration)
+  final StreamController<String> _terminalDataController = StreamController.broadcast();
   
   ConnectionStatus _connectionState = ConnectionStatus.disconnected;
   String? _currentEnvironmentId;
@@ -23,6 +27,9 @@ class TerminalProvider extends ChangeNotifier {
   
   bool get isConnected => _connectionState == ConnectionStatus.connected;
   bool get isConnecting => _connectionState == ConnectionStatus.connecting;
+  
+  // Stream for xterm integration
+  Stream<String> get terminalDataStream => _terminalDataController.stream;
   
   TerminalProvider() {
     _initializeListeners();
@@ -77,6 +84,9 @@ class TerminalProvider extends ChangeNotifier {
         addOutputLine(line);
       }
     }
+    
+    // Also stream raw data for xterm integration
+    _terminalDataController.add(message.data);
   }
   
   void _handleErrorMessage(TerminalMessage message) {
@@ -109,6 +119,12 @@ class TerminalProvider extends ChangeNotifier {
     
     // Auto-scroll to bottom
     _scrollToBottom();
+  }
+  
+  // Send direct input for xterm integration
+  void sendDirectInput(String data) {
+    if (!isConnected) return;
+    _wsService.sendRawInput(data);
   }
   
   // Add output line
@@ -155,6 +171,7 @@ class TerminalProvider extends ChangeNotifier {
     _wsService.dispose();
     _inputController.dispose();
     _scrollController.dispose();
+    _terminalDataController.close();
     super.dispose();
   }
 }
