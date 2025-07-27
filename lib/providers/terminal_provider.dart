@@ -13,6 +13,7 @@ class TerminalProvider extends ChangeNotifier {
   // Stream for direct terminal data (for xterm integration)
   final StreamController<String> _terminalDataController = StreamController.broadcast();
   
+  
   ConnectionStatus _connectionState = ConnectionStatus.disconnected;
   String? _currentEnvironmentId;
   Map<String, dynamic>? _environmentInfo;
@@ -107,20 +108,16 @@ class TerminalProvider extends ChangeNotifier {
   void sendCommand(String command) {
     if (!isConnected) return;
     
-    // Clear input
-    _inputController.clear();
-    
     // Send command
     _wsService.sendCommand(command);
     
-    // Auto-scroll to bottom
-    _scrollToBottom();
+    // Clear input
+    _inputController.clear();
   }
   
-  // Send direct input for xterm integration
+  // Send direct input for xterm integration (now unused)
   void sendDirectInput(String data) {
-    if (!isConnected) return;
-    _wsService.sendRawInput(data);
+    // No longer used - we use the command input field instead
   }
   
   // Add output line
