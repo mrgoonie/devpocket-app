@@ -37,6 +37,7 @@ class TerminalProvider extends ChangeNotifier {
     
     // Listen to terminal messages
     _wsService.messageStream.listen((message) {
+      print('TerminalProvider received message: ${message.type} - ${message.data}');
       switch (message.type) {
         case TerminalMessageType.welcome:
           _handleWelcomeMessage(message);
