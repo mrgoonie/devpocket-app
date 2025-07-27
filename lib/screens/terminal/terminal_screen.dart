@@ -41,10 +41,10 @@ class _TerminalScreenState extends State<TerminalScreen>
     
     _terminalController = TerminalController();
     
-    // Don't handle terminal input directly - we'll use a separate input field
-    // _terminal!.onOutput = (data) {
-    //   _terminalProvider.sendDirectInput(data);
-    // };
+    // Handle terminal input directly - send raw input to WebSocket
+    _terminal!.onOutput = (data) {
+      _terminalProvider.sendRawInput(data);
+    };
     
     // Handle terminal resize
     _terminal!.onResize = (width, height, pixelWidth, pixelHeight) {
@@ -205,92 +205,42 @@ class _TerminalScreenState extends State<TerminalScreen>
       );
     }
 
-    return Consumer<TerminalProvider>(
-      builder: (context, terminalProvider, child) {
-        return Column(
-          children: [
-            // Terminal output area
-            Expanded(
-              child: Container(
-                color: Colors.black,
-                child: TerminalView(
-                  _terminal!,
-                  controller: _terminalController!,
-                  textStyle: const TerminalStyle(
-                    fontSize: 14,
-                    fontFamily: 'JetBrainsMono',
-                  ),
-                  theme: TerminalTheme(
-                    cursor: const Color(0xFF00FF41),
-                    selection: const Color(0xFF444444),
-                    foreground: const Color(0xFF00FF41),
-                    background: Colors.black,
-                    black: Colors.black,
-                    red: const Color(0xFFFF0000),
-                    green: const Color(0xFF00FF41),
-                    yellow: const Color(0xFFFFFF00),
-                    blue: const Color(0xFF0000FF),
-                    magenta: const Color(0xFFFF00FF),
-                    cyan: const Color(0xFF00FFFF),
-                    white: Colors.white,
-                    brightBlack: const Color(0xFF555555),
-                    brightRed: const Color(0xFFFF5555),
-                    brightGreen: const Color(0xFF55FF55),
-                    brightYellow: const Color(0xFFFFFF55),
-                    brightBlue: const Color(0xFF5555FF),
-                    brightMagenta: const Color(0xFFFF55FF),
-                    brightCyan: const Color(0xFF55FFFF),
-                    brightWhite: Colors.white,
-                    searchHitBackground: const Color(0xFFFFFF00),
-                    searchHitBackgroundCurrent: const Color(0xFFFFAA00),
-                    searchHitForeground: Colors.black,
-                  ),
-                ),
-              ),
-            ),
-            
-            // Command input area
-            if (terminalProvider.isConnected)
-              Container(
-                color: Colors.black,
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  children: [
-                    Text(
-                      '\$ ',
-                      style: TextStyle(
-                        color: AppTheme.neonGreen,
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 14,
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: terminalProvider.inputController,
-                        style: TextStyle(
-                          color: AppTheme.neonGreen,
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 14,
-                        ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        autofocus: true,
-                        onSubmitted: (command) {
-                          if (command.trim().isNotEmpty) {
-                            terminalProvider.sendCommand(command);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        );
-      },
+    return Container(
+      color: Colors.black,
+      child: TerminalView(
+        _terminal!,
+        controller: _terminalController!,
+        autofocus: true,
+        textStyle: const TerminalStyle(
+          fontSize: 14,
+          fontFamily: 'JetBrainsMono',
+        ),
+        theme: TerminalTheme(
+          cursor: const Color(0xFF00FF41),
+          selection: const Color(0xFF444444),
+          foreground: const Color(0xFF00FF41),
+          background: Colors.black,
+          black: Colors.black,
+          red: const Color(0xFFFF0000),
+          green: const Color(0xFF00FF41),
+          yellow: const Color(0xFFFFFF00),
+          blue: const Color(0xFF0000FF),
+          magenta: const Color(0xFFFF00FF),
+          cyan: const Color(0xFF00FFFF),
+          white: Colors.white,
+          brightBlack: const Color(0xFF555555),
+          brightRed: const Color(0xFFFF5555),
+          brightGreen: const Color(0xFF55FF55),
+          brightYellow: const Color(0xFFFFFF55),
+          brightBlue: const Color(0xFF5555FF),
+          brightMagenta: const Color(0xFFFF55FF),
+          brightCyan: const Color(0xFF55FFFF),
+          brightWhite: Colors.white,
+          searchHitBackground: const Color(0xFFFFFF00),
+          searchHitBackgroundCurrent: const Color(0xFFFFAA00),
+          searchHitForeground: Colors.black,
+        ),
+      ),
     );
   }
 

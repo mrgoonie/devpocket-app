@@ -66,8 +66,7 @@ class TerminalProvider extends ChangeNotifier {
   void _handleWelcomeMessage(TerminalMessage message) {
     _environmentInfo = message.environment;
     
-    // For xterm integration, we don't add output lines
-    // The welcome message is sent directly to terminal via stream
+    // For xterm integration, show a clean welcome message and wait for server prompt
     final welcomeText = '\x1b[32m🎉 ${message.data}\x1b[0m\r\n';
     _terminalDataController.add(welcomeText);
     
@@ -75,6 +74,10 @@ class TerminalProvider extends ChangeNotifier {
       final envInfo = '\x1b[36mEnvironment: ${_environmentInfo!['name']} (${_environmentInfo!['template']})\x1b[0m\r\n';
       _terminalDataController.add(envInfo);
     }
+    
+    // Send initial command to start a persistent shell session if needed
+    // Most servers should already provide a prompt, but we can request one
+    _wsService.sendRawInput('\n');
     
     notifyListeners();
   }
@@ -115,9 +118,10 @@ class TerminalProvider extends ChangeNotifier {
     _inputController.clear();
   }
   
-  // Send direct input for xterm integration (now unused)
-  void sendDirectInput(String data) {
-    // No longer used - we use the command input field instead
+  // Send raw input directly to WebSocket (for native terminal experience)
+  void sendRawInput(String data) {
+    if (!isConnected) return;
+    _wsService.sendRawInput(data);
   }
   
   // Add output line
