@@ -23,7 +23,6 @@ class WebSocketTerminalService {
   
   Timer? _pingTimer;
   bool _isConnected = false;
-  String? _environmentId;
   
   // Streams for UI to listen to
   Stream<TerminalMessage> get messageStream => _messageController.stream;
@@ -34,9 +33,21 @@ class WebSocketTerminalService {
   // Connect to WebSocket terminal
   Future<bool> connect(String environmentId, String accessToken) async {
     try {
-      _environmentId = environmentId;
-      final uri = Uri.parse('$_baseWsUrl/api/v1/ws/terminal/$environmentId?token=$accessToken');
       
+      // Ensure proper WebSocket URL construction
+      String wsUrl = _baseWsUrl;
+      if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+        // If base URL doesn't have WebSocket protocol, add it
+        wsUrl = wsUrl.startsWith('https://') 
+          ? wsUrl.replaceFirst('https://', 'wss://')
+          : wsUrl.startsWith('http://') 
+            ? wsUrl.replaceFirst('http://', 'ws://')
+            : 'wss://$wsUrl';
+      }
+      
+      final uri = Uri.parse('$wsUrl/api/v1/ws/terminal/$environmentId?token=$accessToken');
+      
+      print('Connecting to WebSocket: ${uri.toString()}');
       _connectionController.add(ConnectionStatus.connecting);
       
       _channel = WebSocketChannel.connect(uri);
@@ -62,23 +73,25 @@ class WebSocketTerminalService {
     }
   }
   
-  // Send command to terminal
+  // Send command to terminal (legacy support - adds carriage return for PTY)
   void sendCommand(String command) {
     if (!_isConnected || _channel == null) return;
     
-    // Add newline if not present
-    final commandWithNewline = command.endsWith('\n') ? command : '$command\n';
+    // For PTY terminals, use carriage return instead of newline
+    final commandWithReturn = command.endsWith('\r') || command.endsWith('\n') 
+        ? command 
+        : '$command\r';
     
     final message = {
       'type': 'input',
-      'data': commandWithNewline,
+      'data': commandWithReturn,
     };
     
-    print('Sending command: ${commandWithNewline.replaceAll('\n', '\\n')}');
+    print('Sending command: ${commandWithReturn.replaceAll('\r', '\\r').replaceAll('\n', '\\n')}');
     _channel!.sink.add(json.encode(message));
   }
   
-  // Send raw input to terminal (for xterm integration)
+  // Send raw input to terminal (for PTY/xterm integration)
   void sendRawInput(String data) {
     if (!_isConnected || _channel == null) return;
     
@@ -87,7 +100,7 @@ class WebSocketTerminalService {
       'data': data,
     };
     
-    print('Sending raw input: ${data.replaceAll('\n', '\\n')}');
+    print('Sending raw input: ${data.replaceAll('\r', '\\r').replaceAll('\n', '\\n')}');
     _channel!.sink.add(json.encode(message));
   }
   
@@ -154,7 +167,7 @@ class WebSocketTerminalService {
   
   void _handleOutputMessage(Map<String, dynamic> message) {
     final output = message['data'] as String? ?? '';
-    print('Received output: ${output.replaceAll('\n', '\\n')}');
+    print('Received PTY output: ${output.replaceAll('\r', '\\r').replaceAll('\n', '\\n')}');
     final outputMessage = TerminalMessage.output(output);
     _messageController.add(outputMessage);
   }
