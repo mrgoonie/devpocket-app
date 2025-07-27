@@ -67,17 +67,14 @@ class WebSocketTerminalService {
     if (!_isConnected || _channel == null) return;
     
     // Add newline if not present
-    final commandWithNewline = command.endsWith('
-') ? command : '$command
-';
+    final commandWithNewline = command.endsWith('\n') ? command : '$command\n';
     
     final message = {
       'type': 'input',
       'data': commandWithNewline,
     };
     
-    print('Sending command: ${commandWithNewline.replaceAll('
-', '\n')}');
+    print('Sending command: ${commandWithNewline.replaceAll('\n', '\\n')}');
     _channel!.sink.add(json.encode(message));
   }
   
@@ -144,8 +141,7 @@ class WebSocketTerminalService {
   
   void _handleOutputMessage(Map<String, dynamic> message) {
     final output = message['data'] as String? ?? '';
-    print('Received output: ${output.replaceAll('
-', '\n')}');
+    print('Received output: ${output.replaceAll('\n', '\\n')}');
     final outputMessage = TerminalMessage.output(output);
     _messageController.add(outputMessage);
   }
