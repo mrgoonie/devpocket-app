@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
-import 'package:logger/logger.dart';
 import '../config/constants.dart';
-import '../utils/error_handler.dart';
-import 'storage_service.dart';
+import '../models/terminal_message.dart';
 
 enum ConnectionStatus {
   connecting,
@@ -15,288 +13,177 @@ enum ConnectionStatus {
   reconnecting,
 }
 
-class WebSocketService {
-  final Logger _logger = Logger();
+class WebSocketTerminalService {
+  static const String _baseWsUrl = AppConstants.wsBaseUrl;
+  
   WebSocketChannel? _channel;
-  final String environmentId;
-
-  final StreamController<String> _outputController =
-      StreamController<String>.broadcast();
-  final StreamController<ConnectionStatus> _connectionController =
-      StreamController<ConnectionStatus>.broadcast();
-
-  Stream<String> get output => _outputController.stream;
-  Stream<ConnectionStatus> get connectionStatus => _connectionController.stream;
-
-  Timer? _reconnectTimer;
-  Timer? _heartbeatTimer;
-  int _reconnectAttempts = 0;
-  bool _isDisposed = false;
-
-  WebSocketService({required this.environmentId});
-
-  Future<void> connect() async {
-    if (_isDisposed) return;
-
+  StreamSubscription? _subscription;
+  final StreamController<TerminalMessage> _messageController = StreamController.broadcast();
+  final StreamController<ConnectionStatus> _connectionController = StreamController.broadcast();
+  
+  Timer? _pingTimer;
+  bool _isConnected = false;
+  String? _environmentId;
+  
+  // Streams for UI to listen to
+  Stream<TerminalMessage> get messageStream => _messageController.stream;
+  Stream<ConnectionStatus> get connectionStream => _connectionController.stream;
+  
+  bool get isConnected => _isConnected;
+  
+  // Connect to WebSocket terminal
+  Future<bool> connect(String environmentId, String accessToken) async {
     try {
-      _logger.d('Connecting to WebSocket for environment: $environmentId');
-      _connectionController.add(ConnectionStatus.connecting);
-
-      final token = await StorageService.getAccessToken();
-      if (token == null) {
-        throw Exception('No authentication token available');
-      }
-
-      // Build the WebSocket URI correctly without extra port
-      final wsUrl = '${AppConstants.wsBaseUrl}/api/v1/ws/terminal/$environmentId?token=$token';
+      _environmentId = environmentId;
+      final uri = Uri.parse('$_baseWsUrl/api/v1/ws/terminal/$environmentId?token=$accessToken');
       
-      // Ensure no malformed URLs with extra ports
-      final cleanUrl = wsUrl.replaceAll(':0', '');
-      final uri = Uri.parse(cleanUrl);
-
-      _logger.d('Connecting to: $cleanUrl');
-
+      _connectionController.add(ConnectionStatus.connecting);
+      
       _channel = WebSocketChannel.connect(uri);
-
-      // Set up stream listener
-      _channel!.stream.listen(
+      
+      // Listen to messages
+      _subscription = _channel!.stream.listen(
         _handleMessage,
         onError: _handleError,
-        onDone: _handleDone,
+        onDone: _handleDisconnection,
       );
-
+      
+      _isConnected = true;
       _connectionController.add(ConnectionStatus.connected);
-      _reconnectAttempts = 0;
-      _startHeartbeat();
-
-      _logger.d('WebSocket connected successfully');
-    } catch (e, stackTrace) {
-      ErrorHandler.logError(
-        'WebSocket connection failed',
-        error: e,
-        stackTrace: stackTrace,
-        context: {'environmentId': environmentId},
-      );
-
-      // Handle specific error types
-      if (e.toString().contains('403') || e.toString().contains('Forbidden')) {
-        _logger.e('Connection rejected - Environment may not be running or accessible');
-        _outputController.add(
-            '\r\n\x1b[31mConnection rejected: Environment may not be ready or accessible.\x1b[0m\r\n');
-        _outputController.add(
-            '\r\n\x1b[33mPlease ensure the environment is running before connecting.\x1b[0m\r\n');
-        _connectionController.add(ConnectionStatus.error);
-        return; // Don't attempt reconnection for 403 errors
-      }
-
+      
+      // Start ping timer for connection health
+      _startPingTimer();
+      
+      return true;
+    } catch (e) {
       _connectionController.add(ConnectionStatus.error);
-      _scheduleReconnect();
+      print('WebSocket connection error: $e');
+      return false;
     }
   }
-
-  void _handleMessage(dynamic message) {
-    if (_isDisposed) return;
-
+  
+  // Send command to terminal
+  void sendCommand(String command) {
+    if (!_isConnected || _channel == null) return;
+    
+    final message = {
+      'type': 'input',
+      'data': command,
+    };
+    
+    _channel!.sink.add(json.encode(message));
+  }
+  
+  // Send ping for connection health
+  void sendPing() {
+    if (!_isConnected || _channel == null) return;
+    
+    final message = {'type': 'ping'};
+    _channel!.sink.add(json.encode(message));
+  }
+  
+  // Handle terminal resize
+  void resizeTerminal(int cols, int rows) {
+    if (!_isConnected || _channel == null) return;
+    
+    final message = {
+      'type': 'resize',
+      'cols': cols,
+      'rows': rows,
+    };
+    
+    _channel!.sink.add(json.encode(message));
+  }
+  
+  // Handle incoming messages
+  void _handleMessage(dynamic data) {
     try {
-      if (message is String) {
-        final data = json.decode(message) as Map<String, dynamic>;
-
-        switch (data['type']) {
-          case 'output':
-            if (data['data'] != null) {
-              _outputController.add(data['data'] as String);
-            }
-            break;
-
-          case 'error':
-            final errorMessage = data['message'] ?? 'Terminal error occurred';
-            _logger.w('Terminal error: $errorMessage');
-            _outputController
-                .add('\r\n\x1b[31mError: $errorMessage\x1b[0m\r\n');
-            break;
-
-          case 'status':
-            _logger.d('Terminal status: ${data['message']}');
-            break;
-
-          case 'pong':
-            // Heartbeat response - connection is alive
-            break;
-
-          default:
-            _logger.d('Unknown message type: ${data['type']}');
-        }
-      } else {
-        // Handle binary data if needed
-        _outputController.add(message.toString());
+      final Map<String, dynamic> message = json.decode(data);
+      final messageType = message['type'] as String?;
+      
+      switch (messageType) {
+        case 'welcome':
+          _handleWelcomeMessage(message);
+          break;
+        case 'output':
+          _handleOutputMessage(message);
+          break;
+        case 'pong':
+          _handlePongMessage();
+          break;
+        case 'error':
+          _handleErrorMessage(message);
+          break;
+        default:
+          print('Unknown message type: $messageType');
       }
     } catch (e) {
-      ErrorHandler.logError(
-        'Failed to parse WebSocket message',
-        error: e,
-        context: {'message': message.toString()},
-      );
+      print('Error parsing WebSocket message: $e');
     }
   }
-
+  
+  void _handleWelcomeMessage(Map<String, dynamic> message) {
+    final environmentData = message['environment'] as Map<String, dynamic>?;
+    final welcomeMessage = TerminalMessage.welcome(
+      message: message['message'] as String? ?? 'Connected',
+      environment: environmentData,
+    );
+    
+    _messageController.add(welcomeMessage);
+    print('Connected to environment: ${environmentData?['name']}');
+  }
+  
+  void _handleOutputMessage(Map<String, dynamic> message) {
+    final output = message['data'] as String? ?? '';
+    final outputMessage = TerminalMessage.output(output);
+    _messageController.add(outputMessage);
+  }
+  
+  void _handlePongMessage() {
+    print('Received pong - connection healthy');
+  }
+  
+  void _handleErrorMessage(Map<String, dynamic> message) {
+    final errorMsg = message['message'] as String? ?? 'Unknown error';
+    final errorMessage = TerminalMessage.error(errorMsg);
+    _messageController.add(errorMessage);
+  }
+  
   void _handleError(error) {
-    if (_isDisposed) return;
-
-    ErrorHandler.logError(
-      'WebSocket error occurred',
-      error: error,
-      context: {'environmentId': environmentId},
-    );
-
-    // Handle specific error types
-    if (error.toString().contains('403') || error.toString().contains('Forbidden')) {
-      _logger.e('Connection rejected - Environment may not be running');
-      _outputController.add(
-          '\r\n\x1b[31mConnection rejected: Environment may not be ready.\x1b[0m\r\n');
-      _connectionController.add(ConnectionStatus.error);
-      return; // Don't attempt reconnection for 403 errors
-    }
-
+    print('WebSocket error: $error');
     _connectionController.add(ConnectionStatus.error);
-    _scheduleReconnect();
+    _cleanup();
   }
-
-  void _handleDone() {
-    if (_isDisposed) return;
-
-    _logger.w('WebSocket connection closed');
+  
+  void _handleDisconnection() {
+    print('WebSocket disconnected');
     _connectionController.add(ConnectionStatus.disconnected);
-    _stopHeartbeat();
-    _scheduleReconnect();
+    _cleanup();
   }
-
-  void _scheduleReconnect() {
-    if (_isDisposed ||
-        _reconnectAttempts >= AppConstants.wsMaxReconnectAttempts) {
-      if (_reconnectAttempts >= AppConstants.wsMaxReconnectAttempts) {
-        _logger.e('Max reconnection attempts reached');
-        _outputController.add(
-            '\r\n\x1b[31mConnection lost. Please refresh to reconnect.\x1b[0m\r\n');
-      }
-      return;
-    }
-
-    _reconnectTimer?.cancel();
-    _connectionController.add(ConnectionStatus.reconnecting);
-
-    final delay = Duration(
-      milliseconds: AppConstants.wsReconnectDelayMs * (_reconnectAttempts + 1),
-    );
-    _reconnectAttempts++;
-
-    _logger.d(
-        'Scheduling reconnection attempt $_reconnectAttempts in ${delay.inMilliseconds}ms');
-
-    _reconnectTimer = Timer(delay, () {
-      if (!_isDisposed) {
-        connect();
-      }
+  
+  void _startPingTimer() {
+    _pingTimer?.cancel();
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      sendPing();
     });
   }
-
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (timer) {
-        if (!_isDisposed && _channel != null) {
-          _sendMessage({
-            'type': 'ping',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-          });
-        }
-      },
-    );
+  
+  void _cleanup() {
+    _isConnected = false;
+    _pingTimer?.cancel();
+    _subscription?.cancel();
+    _channel?.sink.close(status.normalClosure);
   }
-
-  void _stopHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-  }
-
-  void sendCommand(String command) {
-    if (_isDisposed || _channel == null) {
-      _logger.w('Cannot send command: WebSocket not connected');
-      return;
-    }
-
-    try {
-      _sendMessage({
-        'type': 'input',
-        'data': command,
-      });
-
-      _logger.d('Sent command: ${command.replaceAll('\n', '\\n')}');
-    } catch (e) {
-      ErrorHandler.logError(
-        'Failed to send command',
-        error: e,
-        context: {'command': command},
-      );
-    }
-  }
-
-  void resize(int cols, int rows) {
-    if (_isDisposed || _channel == null) return;
-
-    try {
-      _sendMessage({
-        'type': 'resize',
-        'cols': cols,
-        'rows': rows,
-      });
-
-      _logger.d('Sent resize: ${cols}x$rows');
-    } catch (e) {
-      ErrorHandler.logError(
-        'Failed to send resize',
-        error: e,
-        context: {'cols': cols, 'rows': rows},
-      );
-    }
-  }
-
-  void _sendMessage(Map<String, dynamic> message) {
-    final jsonMessage = json.encode(message);
-    _channel?.sink.add(jsonMessage);
-  }
-
+  
+  // Disconnect from WebSocket
   void disconnect() {
-    if (_isDisposed) return;
-
-    _logger.d('Disconnecting WebSocket');
-    _isDisposed = true;
-
-    _reconnectTimer?.cancel();
-    _stopHeartbeat();
-
-    try {
-      _channel?.sink.close(status.goingAway);
-    } catch (e) {
-      _logger.w('Error closing WebSocket', error: e);
-    }
-
-    // Close controllers
-    _outputController.close();
-    _connectionController.close();
-
-    _logger.d('WebSocket disconnected');
+    _cleanup();
+    _connectionController.add(ConnectionStatus.disconnected);
   }
-
-  // Utility methods
-  bool get isConnected =>
-      _channel != null && !_isDisposed && _connectionController.hasListener;
-
-  bool get isReconnecting => _reconnectTimer?.isActive == true;
-
-  int get reconnectAttempts => _reconnectAttempts;
-
-  void resetReconnectAttempts() {
-    _reconnectAttempts = 0;
+  
+  void dispose() {
+    _cleanup();
+    _messageController.close();
+    _connectionController.close();
   }
 }

@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/environment_provider.dart';
+import 'providers/terminal_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/loading/loading_screen.dart';
 import 'screens/main/main_screen.dart';
@@ -55,6 +56,7 @@ class DevPocketApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => EnvironmentProvider()),
+        ChangeNotifierProvider(create: (_) => TerminalProvider()),
       ],
       child: MaterialApp(
         title: 'DevPocket',
