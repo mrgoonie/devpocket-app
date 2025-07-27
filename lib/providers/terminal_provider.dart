@@ -64,44 +64,40 @@ class TerminalProvider extends ChangeNotifier {
   
   void _handleWelcomeMessage(TerminalMessage message) {
     _environmentInfo = message.environment;
-    addOutputLine('🎉 ${message.data}');
+    
+    // For xterm integration, we don't add output lines
+    // The welcome message is sent directly to terminal via stream
+    final welcomeText = '\x1b[32m🎉 ${message.data}\x1b[0m\r\n';
+    _terminalDataController.add(welcomeText);
     
     if (_environmentInfo != null) {
-      addOutputLine('Environment: ${_environmentInfo!['name']}');
-      addOutputLine('Status: ${_environmentInfo!['status']}');
-      addOutputLine('Template: ${_environmentInfo!['template']}');
-      addOutputLine('');
+      final envInfo = '\x1b[36mEnvironment: ${_environmentInfo!['name']} (${_environmentInfo!['template']})\x1b[0m\r\n';
+      _terminalDataController.add(envInfo);
     }
     
     notifyListeners();
   }
   
   void _handleOutputMessage(TerminalMessage message) {
-    // Split output into lines and add them
-    final lines = message.data.split('\n');
-    for (final line in lines) {
-      if (line.isNotEmpty || lines.length == 1) {
-        addOutputLine(line);
-      }
-    }
-    
-    // Also stream raw data for xterm integration
+    // For xterm integration, stream raw data directly to terminal
     _terminalDataController.add(message.data);
   }
   
   void _handleErrorMessage(TerminalMessage message) {
-    addOutputLine('❌ Error: ${message.data}');
+    // For xterm integration, stream error directly to terminal
+    final errorText = '\x1b[31m❌ Error: ${message.data}\x1b[0m\r\n';
+    _terminalDataController.add(errorText);
   }
   
   // Connect to environment
   Future<bool> connectToEnvironment(String environmentId, String accessToken) async {
     _currentEnvironmentId = environmentId;
-    addOutputLine('🔌 Connecting to environment...');
     
     final success = await _wsService.connect(environmentId, accessToken);
     
     if (!success) {
-      addOutputLine('❌ Failed to connect to environment');
+      final errorText = '\x1b[31m❌ Failed to connect to environment\x1b[0m\r\n';
+      _terminalDataController.add(errorText);
     }
     
     return success;

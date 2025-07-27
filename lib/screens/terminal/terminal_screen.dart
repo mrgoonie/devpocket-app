@@ -74,9 +74,8 @@ class _TerminalScreenState extends State<TerminalScreen>
 
     _currentEnvironmentId = environment.id;
     
-    // Clear terminal and show connecting message
+    // Clear terminal 
     _terminal?.buffer.clear();
-    _terminal?.write('\x1b[32mConnecting to ${environment.name}...\x1b[0m\r\n');
     
     // Get access token and connect
     final accessToken = await StorageService.getAccessToken();
@@ -211,6 +210,7 @@ class _TerminalScreenState extends State<TerminalScreen>
       child: TerminalView(
         _terminal!,
         controller: _terminalController!,
+        autofocus: true, // Automatically focus for keyboard input
         textStyle: const TerminalStyle(
           fontSize: 14,
           fontFamily: 'JetBrainsMono',
