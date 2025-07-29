@@ -1,10 +1,38 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../models/environment.dart';
 import '../../models/enums.dart';
 import '../../providers/environment_provider.dart';
+
+class ConsoleLogEntry {
+  final String level;
+  final String message;
+  final DateTime timestamp;
+
+  ConsoleLogEntry({
+    required this.level,
+    required this.message,
+    required this.timestamp,
+  });
+
+  Color get levelColor {
+    switch (level) {
+      case 'error':
+        return AppTheme.errorColor;
+      case 'warn':
+        return AppTheme.warningColor;
+      case 'info':
+        return AppTheme.infoColor;
+      default:
+        return AppTheme.primaryText;
+    }
+  }
+}
 
 class WebViewScreen extends StatefulWidget {
   const WebViewScreen({super.key});
@@ -19,7 +47,11 @@ class _WebViewScreenState extends State<WebViewScreen>
   bool _isLoading = true;
   String? _currentUrl;
   bool _showDevPanel = false;
-  String _consoleLog = '';
+  final List<ConsoleLogEntry> _consoleLogs = [];
+  final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _jsController = TextEditingController();
+  bool _isEditingUrl = false;
+  String _logFilter = 'all'; // all, log, error, warn, info
 
   @override
   bool get wantKeepAlive => true;
@@ -28,6 +60,13 @@ class _WebViewScreenState extends State<WebViewScreen>
   void initState() {
     super.initState();
     _initializeWebView();
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _jsController.dispose();
+    super.dispose();
   }
 
   void _initializeWebView() {
@@ -46,8 +85,9 @@ class _WebViewScreenState extends State<WebViewScreen>
             if (mounted) {
               setState(() {
                 _currentUrl = url;
+                _urlController.text = url;
                 _isLoading = true;
-                _consoleLog = '';
+                _consoleLogs.clear();
               });
             }
           },
@@ -92,7 +132,9 @@ class _WebViewScreenState extends State<WebViewScreen>
             return String(arg);
           }).join(' ');
           
-          window.flutter_inappwebview.callHandler('consoleLog', {
+          // Store logs in window object for Flutter to access
+          if (!window._flutterLogs) window._flutterLogs = [];
+          window._flutterLogs.push({
             level: level,
             message: message,
             timestamp: new Date().toISOString()
@@ -130,6 +172,111 @@ class _WebViewScreenState extends State<WebViewScreen>
         });
       })();
     ''');
+
+    // Poll for new logs periodically
+    _startLogPolling();
+  }
+
+  void _startLogPolling() {
+    Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (!mounted || _webViewController == null) {
+        timer.cancel();
+        return;
+      }
+      
+      _fetchConsoleLogsFromJS();
+    });
+  }
+
+  Future<void> _fetchConsoleLogsFromJS() async {
+    try {
+      final result = await _webViewController!.runJavaScriptReturningResult('''
+        (function() {
+          if (!window._flutterLogs) return "[]";
+          const logs = JSON.stringify(window._flutterLogs);
+          window._flutterLogs = []; // Clear after reading
+          return logs;
+        })();
+      ''');
+
+      if (result.toString() != '[]' && result.toString() != 'null') {
+        final String logsJson = result.toString().replaceAll('"', '"').replaceAll('"', '"');
+        final List<dynamic> logsList = jsonDecode(logsJson);
+        
+        setState(() {
+          for (final logData in logsList) {
+            _consoleLogs.add(ConsoleLogEntry(
+              level: logData['level'] as String,
+              message: logData['message'] as String,
+              timestamp: DateTime.parse(logData['timestamp'] as String),
+            ));
+          }
+        });
+      }
+    } catch (e) {
+      // Silently ignore errors to avoid spam
+    }
+  }
+
+  void _navigateToUrl(String url) {
+    if (_webViewController == null) return;
+
+    // Ensure URL has a protocol
+    String finalUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      finalUrl = 'https://$url';
+    }
+
+    _webViewController!.loadRequest(Uri.parse(finalUrl));
+    setState(() {
+      _isEditingUrl = false;
+    });
+  }
+
+  void _onUrlSubmitted(String url) {
+    if (url.trim().isNotEmpty) {
+      _navigateToUrl(url.trim());
+    }
+  }
+
+  Future<void> _goBack() async {
+    if (_webViewController != null && await _webViewController!.canGoBack()) {
+      await _webViewController!.goBack();
+    }
+  }
+
+  Future<void> _goForward() async {
+    if (_webViewController != null && await _webViewController!.canGoForward()) {
+      await _webViewController!.goForward();
+    }
+  }
+
+  Future<void> _reloadPage() async {
+    if (_webViewController != null) {
+      await _webViewController!.reload();
+    }
+  }
+
+  void _clearConsole() {
+    setState(() {
+      _consoleLogs.clear();
+    });
+  }
+
+  Future<void> _executeJavaScript(String script) async {
+    if (_webViewController != null && script.trim().isNotEmpty) {
+      try {
+        await _webViewController!.runJavaScript(script);
+        _jsController.clear();
+      } catch (e) {
+        _showErrorSnackBar('JavaScript execution error: $e');
+      }
+    }
+  }
+
+  List<ConsoleLogEntry> get _filteredLogs {
+    if (_logFilter == 'all') return _consoleLogs;
+    return _consoleLogs.where((log) => log.level == _logFilter).toList();
   }
 
   @override
@@ -195,24 +342,58 @@ class _WebViewScreenState extends State<WebViewScreen>
 
               const SizedBox(width: 12),
 
-              // URL display
+              // URL input/display
               Expanded(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.darkCard,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.darkBorder, width: 1),
-                  ),
-                  child: Text(
-                    _currentUrl ??
-                        (environment?.externalUrl ?? 'No URL available'),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.secondaryText,
-                          fontFamily: 'JetBrainsMono',
-                        ),
-                    overflow: TextOverflow.ellipsis,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isEditingUrl = true;
+                      _urlController.text = _currentUrl ?? environment?.externalUrl ?? '';
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkCard,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _isEditingUrl ? AppTheme.neonBlue : AppTheme.darkBorder,
+                        width: _isEditingUrl ? 2 : 1,
+                      ),
+                    ),
+                    child: _isEditingUrl
+                        ? TextField(
+                            controller: _urlController,
+                            autofocus: true,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.primaryText,
+                                  fontFamily: 'JetBrainsMono',
+                                ),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'Enter URL...',
+                              hintStyle: TextStyle(
+                                color: AppTheme.mutedText,
+                                fontFamily: 'JetBrainsMono',
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onSubmitted: _onUrlSubmitted,
+                            onTapOutside: (_) {
+                              setState(() {
+                                _isEditingUrl = false;
+                              });
+                            },
+                          )
+                        : Text(
+                            _currentUrl ?? environment?.externalUrl ?? 'No URL available',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.secondaryText,
+                                  fontFamily: 'JetBrainsMono',
+                                ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                   ),
                 ),
               ),
@@ -239,15 +420,37 @@ class _WebViewScreenState extends State<WebViewScreen>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Back button
+        IconButton(
+          onPressed: _isLoading ? null : _goBack,
+          icon: Icon(
+            Icons.arrow_back,
+            color: _isLoading ? AppTheme.mutedText : AppTheme.secondaryText,
+            size: 20,
+          ),
+          tooltip: 'Back',
+        ),
+
+        // Forward button
+        IconButton(
+          onPressed: _isLoading ? null : _goForward,
+          icon: Icon(
+            Icons.arrow_forward,
+            color: _isLoading ? AppTheme.mutedText : AppTheme.secondaryText,
+            size: 20,
+          ),
+          tooltip: 'Forward',
+        ),
+
         // Refresh
         IconButton(
-          onPressed: _isLoading ? null : () => _webViewController?.reload(),
+          onPressed: _isLoading ? null : _reloadPage,
           icon: Icon(
             Icons.refresh,
             color: _isLoading ? AppTheme.mutedText : AppTheme.secondaryText,
             size: 20,
           ),
-          tooltip: 'Refresh',
+          tooltip: 'Reload',
         ),
 
         // Developer panel toggle
@@ -262,7 +465,7 @@ class _WebViewScreenState extends State<WebViewScreen>
             color: _showDevPanel ? AppTheme.neonGreen : AppTheme.secondaryText,
             size: 20,
           ),
-          tooltip: 'Developer Panel',
+          tooltip: 'Developer Console',
         ),
 
         // External browser
@@ -355,7 +558,7 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   Widget _buildDeveloperPanel() {
     return Container(
-      height: 200,
+      height: 300,
       decoration: const BoxDecoration(
         color: AppTheme.darkCard,
         border: Border(
@@ -364,7 +567,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       ),
       child: Column(
         children: [
-          // Panel header
+          // Panel header with controls
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
@@ -390,12 +593,35 @@ class _WebViewScreenState extends State<WebViewScreen>
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  onPressed: () {
+                
+                // Log filter dropdown
+                DropdownButton<String>(
+                  value: _logFilter,
+                  onChanged: (value) {
                     setState(() {
-                      _consoleLog = '';
+                      _logFilter = value!;
                     });
                   },
+                  dropdownColor: AppTheme.darkSurface,
+                  underline: Container(),
+                  style: const TextStyle(
+                    color: AppTheme.secondaryText,
+                    fontSize: 10,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('All')),
+                    DropdownMenuItem(value: 'log', child: Text('Log')),
+                    DropdownMenuItem(value: 'error', child: Text('Error')),
+                    DropdownMenuItem(value: 'warn', child: Text('Warn')),
+                    DropdownMenuItem(value: 'info', child: Text('Info')),
+                  ],
+                ),
+                
+                const SizedBox(width: 8),
+                
+                // Clear console button
+                IconButton(
+                  onPressed: _clearConsole,
                   icon: const Icon(
                     Icons.clear,
                     color: AppTheme.secondaryText,
@@ -409,21 +635,109 @@ class _WebViewScreenState extends State<WebViewScreen>
 
           // Console output
           Expanded(
+            flex: 2,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              child: SingleChildScrollView(
-                child: Text(
-                  _consoleLog.isEmpty
-                      ? 'Console output will appear here...'
-                      : _consoleLog,
-                  style: const TextStyle(
-                    color: AppTheme.primaryText,
+              padding: const EdgeInsets.all(8),
+              child: _filteredLogs.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Console output will appear here...',
+                        style: TextStyle(
+                          color: AppTheme.mutedText,
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 11,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredLogs.length,
+                      itemBuilder: (context, index) {
+                        final log = _filteredLogs[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '[${log.level.toUpperCase()}]',
+                                style: TextStyle(
+                                  color: log.levelColor,
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  log.message,
+                                  style: const TextStyle(
+                                    color: AppTheme.primaryText,
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+
+          // JavaScript execution input
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: AppTheme.darkSurface,
+              border: Border(
+                top: BorderSide(color: AppTheme.darkBorder, width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  '> ',
+                  style: TextStyle(
+                    color: AppTheme.neonGreen,
                     fontFamily: 'JetBrainsMono',
-                    fontSize: 11,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
+                Expanded(
+                  child: TextField(
+                    controller: _jsController,
+                    style: const TextStyle(
+                      color: AppTheme.primaryText,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Execute JavaScript...',
+                      hintStyle: TextStyle(
+                        color: AppTheme.mutedText,
+                        fontFamily: 'JetBrainsMono',
+                      ),
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onSubmitted: _executeJavaScript,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _executeJavaScript(_jsController.text),
+                  icon: const Icon(
+                    Icons.play_arrow,
+                    color: AppTheme.neonGreen,
+                    size: 16,
+                  ),
+                  tooltip: 'Execute',
+                ),
+              ],
             ),
           ),
         ],
@@ -431,14 +745,17 @@ class _WebViewScreenState extends State<WebViewScreen>
     );
   }
 
-  void _openInExternalBrowser(String url) {
-    // In a real implementation, you would use url_launcher
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Would open: $url'),
-        backgroundColor: AppTheme.infoColor,
-      ),
-    );
+  Future<void> _openInExternalBrowser(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorSnackBar('Could not open URL: $url');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error opening URL: $e');
+    }
   }
 
   void _showErrorSnackBar(String message) {

@@ -264,7 +264,7 @@ class _MainScreenState extends State<MainScreen>
                     size: 24,
                     color: isActive
                         ? tab.activeColor
-                        : AppTheme.primaryText.withValues(alpha: 0.7),
+                        : AppTheme.primaryText,
                   ).animate(target: isActive ? 1 : 0).scale(duration: 200.ms),
                   const SizedBox(height: 4),
                   Text(
@@ -275,7 +275,7 @@ class _MainScreenState extends State<MainScreen>
                           isActive ? FontWeight.bold : FontWeight.normal,
                       color: isActive
                           ? tab.activeColor
-                          : AppTheme.primaryText.withValues(alpha: 0.7),
+                          : AppTheme.primaryText,
                     ),
                   ),
                 ],
