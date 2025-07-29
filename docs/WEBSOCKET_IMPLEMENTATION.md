@@ -18,13 +18,14 @@ This document provides a complete implementation guide for integrating WebSocket
 
 ## Overview
 
-The DevPocket WebSocket terminal provides real-time command execution in Kubernetes-based development environments. The implementation supports:
+The DevPocket WebSocket terminal provides real-time PTY (pseudo-terminal) access to development environments. The implementation supports:
 
-- Real-time command execution
-- Bidirectional communication (input/output)
-- Terminal session management
-- Connection health monitoring (ping/pong)
-- Proper cleanup and error handling
+- **Full PTY terminal emulation** with ANSI escape sequences
+- **Interactive programs** (vim, nano, htop, etc.)
+- **Real-time bidirectional communication** (input/output)
+- **Terminal resize support** for responsive layouts
+- **Connection health monitoring** (ping/pong)
+- **Proper cleanup and error handling**
 
 ## WebSocket API Specification
 
@@ -56,8 +57,7 @@ Add these dependencies to your `pubspec.yaml`:
 ```yaml
 dependencies:
   web_socket_channel: ^2.4.0
-  flutter_pty: ^0.3.0  # For terminal UI (optional)
-  xterm: ^3.4.0        # Alternative terminal UI
+  xterm: ^3.4.0        # Terminal UI with PTY support
   provider: ^6.0.5     # State management
   
 dev_dependencies:
@@ -312,29 +312,34 @@ class WebSocketTerminalService {
   "type": "welcome",
   "message": "Connected to goon",
   "environment": {
+    "id": "68850093852e1ff1492d3d87",
     "name": "goon",
     "status": "running",
     "template": "ubuntu",
-    "pod_name": "goon-ea07939a-588cf5dd4f-pnftp"
+    "pty_enabled": true
   }
 }
 ```
 
-#### 2. Command Input (Client → Server)
+#### 2. Terminal Input (Client → Server)
 ```json
 {
   "type": "input",
-  "data": "ls -la"
+  "data": "ls -la\r"
 }
 ```
 
-#### 3. Command Output (Server → Client)
+**Note**: PTY input should include carriage return (`\r`) or newline (`\n`) characters as appropriate for terminal interaction.
+
+#### 3. Terminal Output (Server → Client)
 ```json
 {
   "type": "output",
-  "data": "$ ls -la\ntotal 8\ndrwxr-xr-x 2 root root 4096 Jul 26 16:27 .\ndrwxr-xr-x 3 root root 4096 Jul 26 16:27 ..\n"
+  "data": "\u001b[0m\u001b[27m\u001b[24m\u001b[J\u001b[01;32muser@goon\u001b[00m:\u001b[01;34m/workspace\u001b[00m$ ls -la\r\ntotal 8\r\ndrwxr-xr-x 2 root root 4096 Jul 26 16:27 .\r\ndrwxr-xr-x 3 root root 4096 Jul 26 16:27 ..\r\n\u001b[01;32muser@goon\u001b[00m:\u001b[01;34m/workspace\u001b[00m$ "
 }
 ```
+
+**Note**: PTY output includes ANSI escape sequences for colors, cursor positioning, and other terminal features.
 
 #### 4. Ping/Pong (Bidirectional)
 ```json
@@ -587,6 +592,297 @@ class TerminalProvider extends ChangeNotifier {
     _scrollController.dispose();
     super.dispose();
   }
+}
+```
+
+### PTY Terminal Implementation with xterm
+
+For full PTY support, use the `xterm` package which handles ANSI escape sequences and provides a complete terminal experience:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:xterm/xterm.dart';
+
+class PTYTerminalWidget extends StatefulWidget {
+  final String environmentId;
+  final String accessToken;
+  
+  const PTYTerminalWidget({
+    Key? key,
+    required this.environmentId,
+    required this.accessToken,
+  }) : super(key: key);
+  
+  @override
+  State<PTYTerminalWidget> createState() => _PTYTerminalWidgetState();
+}
+
+class _PTYTerminalWidgetState extends State<PTYTerminalWidget> {
+  late Terminal terminal;
+  late TerminalController terminalController;
+  late TerminalProvider _terminalProvider;
+  
+  @override
+  void initState() {
+    super.initState();
+    _terminalProvider = context.read<TerminalProvider>();
+    
+    // Create terminal with PTY support
+    terminal = Terminal(
+      maxLines: 10000,
+    );
+    
+    terminalController = TerminalController();
+    
+    // Set up terminal input handler
+    terminal.onOutput = (data) {
+      // Send terminal input to WebSocket
+      _terminalProvider.sendRawInput(data);
+    };
+    
+    terminal.onResize = (width, height, pixelWidth, pixelHeight) {
+      // Send resize event to WebSocket
+      _terminalProvider.resizeTerminal(width, height);
+    };
+    
+    // Connect to environment
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _terminalProvider.connectToEnvironment(
+        widget.environmentId,
+        widget.accessToken,
+      );
+    });
+    
+    // Listen for PTY output
+    _terminalProvider.messageStream.listen((message) {
+      if (message.type == TerminalMessageType.output) {
+        // Write PTY output directly to terminal (includes ANSI sequences)
+        terminal.write(message.data);
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    terminal.onOutput = null;
+    terminal.onResize = null;
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.grey[900],
+        title: Consumer<TerminalProvider>(
+          builder: (context, provider, child) {
+            final envInfo = provider.environmentInfo;
+            return Text(
+              envInfo != null ? 'Terminal - ${envInfo['name']}' : 'Terminal',
+              style: TextStyle(color: Colors.white),
+            );
+          },
+        ),
+        actions: [
+          Consumer<TerminalProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: Icon(
+                  provider.isConnected 
+                    ? Icons.cloud_done 
+                    : Icons.cloud_off,
+                  color: provider.isConnected 
+                    ? Colors.green 
+                    : Colors.red,
+                ),
+                onPressed: () {
+                  if (!provider.isConnected) {
+                    provider.connectToEnvironment(
+                      widget.environmentId,
+                      widget.accessToken,
+                    );
+                  }
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.clear, color: Colors.white),
+            onPressed: () {
+              terminal.clear();
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Connection Status
+          Consumer<TerminalProvider>(
+            builder: (context, provider, child) {
+              if (provider.isConnecting) {
+                return Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(8),
+                  color: Colors.orange,
+                  child: Text(
+                    '🔌 Connecting to PTY terminal...',
+                    style: TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              } else if (!provider.isConnected) {
+                return Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(8),
+                  color: Colors.red,
+                  child: Text(
+                    '❌ Disconnected - Tap to reconnect',
+                    style: TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+              return SizedBox.shrink();
+            },
+          ),
+          
+          // PTY Terminal
+          Expanded(
+            child: Container(
+              color: Colors.black,
+              child: TerminalView(
+                terminal,
+                controller: terminalController,
+                autofocus: true,
+                backgroundOpacity: 0.0,
+                onSecondaryTapDown: (details, offset) async {
+                  // Handle right-click for context menu
+                  final selection = terminalController.selection;
+                  if (selection != null) {
+                    final text = terminal.buffer.getText(selection);
+                    await Clipboard.setData(ClipboardData(text: text));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Copied to clipboard')),
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Enhanced Terminal Provider for PTY
+
+Update the `TerminalProvider` to handle raw PTY data:
+
+```dart
+class TerminalProvider extends ChangeNotifier {
+  final WebSocketTerminalService _wsService = WebSocketTerminalService();
+  
+  ConnectionState _connectionState = ConnectionState.disconnected;
+  String? _currentEnvironmentId;
+  Map<String, dynamic>? _environmentInfo;
+  
+  // Streams for PTY data
+  final StreamController<TerminalMessage> _messageController = StreamController.broadcast();
+  
+  // Getters
+  Stream<TerminalMessage> get messageStream => _messageController.stream;
+  ConnectionState get connectionState => _connectionState;
+  String? get currentEnvironmentId => _currentEnvironmentId;
+  Map<String, dynamic>? get environmentInfo => _environmentInfo;
+  
+  bool get isConnected => _connectionState == ConnectionState.connected;
+  bool get isConnecting => _connectionState == ConnectionState.connecting;
+  
+  TerminalProvider() {
+    _initializeListeners();
+  }
+  
+  void _initializeListeners() {
+    // Listen to connection state changes
+    _wsService.connectionStream.listen((state) {
+      _connectionState = state;
+      notifyListeners();
+    });
+    
+    // Listen to terminal messages
+    _wsService.messageStream.listen((message) {
+      _messageController.add(message);
+      
+      if (message.type == TerminalMessageType.welcome) {
+        _environmentInfo = message.environment;
+        notifyListeners();
+      }
+    });
+  }
+  
+  // Connect to environment
+  Future<bool> connectToEnvironment(String environmentId, String accessToken) async {
+    _currentEnvironmentId = environmentId;
+    return await _wsService.connect(environmentId, accessToken);
+  }
+  
+  // Send raw input (for PTY - includes escape sequences, etc.)
+  void sendRawInput(String data) {
+    if (!isConnected) return;
+    _wsService.sendRawInput(data);
+  }
+  
+  // Send formatted command (legacy support)
+  void sendCommand(String command) {
+    if (!isConnected) return;
+    // For PTY, commands need proper line endings
+    _wsService.sendRawInput('$command\r');
+  }
+  
+  // Handle terminal resize
+  void resizeTerminal(int cols, int rows) {
+    _wsService.resizeTerminal(cols, rows);
+  }
+  
+  // Disconnect
+  void disconnect() {
+    _wsService.disconnect();
+    _currentEnvironmentId = null;
+    _environmentInfo = null;
+  }
+  
+  @override
+  void dispose() {
+    _wsService.dispose();
+    _messageController.close();
+    super.dispose();
+  }
+}
+```
+
+### Updated WebSocket Service for PTY
+
+```dart
+class WebSocketTerminalService {
+  // ... existing code ...
+  
+  // Send raw input (for PTY support)
+  void sendRawInput(String data) {
+    if (!_isConnected || _channel == null) return;
+    
+    final message = {
+      'type': 'input',
+      'data': data,
+    };
+    
+    _channel!.sink.add(json.encode(message));
+  }
+  
+  // ... rest of existing code ...
 }
 ```
 

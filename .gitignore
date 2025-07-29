@@ -52,3 +52,5 @@ venv
 .dart_tool
 build
 GoogleService-Info.plist
+
+.serena/cache
