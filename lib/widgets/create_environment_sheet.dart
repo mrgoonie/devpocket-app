@@ -324,14 +324,14 @@ class _CreateEnvironmentSheetState extends State<CreateEnvironmentSheet> {
               width: 2,
             ),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Icon(
                 Icons.error_outline,
                 color: AppTheme.errorColor,
                 size: 24,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Error',
                 style: TextStyle(

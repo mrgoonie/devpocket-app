@@ -100,7 +100,7 @@ class TerminalProvider extends ChangeNotifier {
     final success = await _wsService.connect(environmentId, accessToken);
     
     if (!success) {
-      final errorText = '\x1b[31m❌ Failed to connect to environment\x1b[0m\r\n';
+      const errorText = '\x1b[31m❌ Failed to connect to environment\x1b[0m\r\n';
       _terminalDataController.add(errorText);
     }
     
